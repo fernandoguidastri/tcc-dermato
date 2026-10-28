@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#132A3B">
+  <title>Cadastro de Médico - Plataforma Dermatologica</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="auth-shell">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#132A3B" stroke-width="1.6">
+          <circle cx="10.5" cy="10.5" r="6.5"/>
+          <circle cx="10.5" cy="10.5" r="2" fill="#132A3B" stroke="none"/>
+          <line x1="15.2" y1="15.2" x2="20.5" y2="20.5" stroke-linecap="round"/>
+        </svg>
+        <span class="brand-text">Plataforma Dermatológica</span>
+      </div>
+
+      <h2>Cadastro de profissional</h2>
+      <p>Crie sua conta de acesso ao sistema</p>
+
+      <label>Nome completo</label>
+      <input type="text" id="nome">
+
+      <label>CRM</label>
+      <input type="text" id="crm">
+
+      <label>E-mail</label>
+      <input type="email" id="email">
+
+      <label>Senha</label>
+      <input type="password" id="senha" minlength="8" autocomplete="new-password">
+      <p class="dica-campo">Mínimo de 8 caracteres.</p>
+
+      <button class="primary" onclick="cadastrar()" style="width:100%;">Cadastrar</button>
+      <div id="msg" class="msg"></div>
+
+      <p style="margin-top:20px; font-size:0.85rem;">
+        <a class="link-simple" href="login.html">Voltar para login</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    // Mesmas regras do backend; retorna a mensagem de erro ou null
+    function erroFormulario(dados) {
+      if (!dados.nome.trim() || !dados.crm.trim() || !dados.email.trim() || !dados.senha) {
+        return "Preencha todos os campos: nome, CRM, e-mail e senha.";
+      }
+      if (!emailValido(dados.email)) return "E-mail inválido. Use o formato nome@exemplo.com.";
+      if (dados.senha.length < SENHA_TAMANHO_MINIMO) {
+        return `A senha deve ter no mínimo ${SENHA_TAMANHO_MINIMO} caracteres.`;
+      }
+      return null;
+    }
+
+    async function cadastrar() {
+      const dados = {
+        nome: document.getElementById("nome").value,
+        crm: document.getElementById("crm").value,
+        email: document.getElementById("email").value,
+        senha: document.getElementById("senha").value,
+      };
+      const msg = document.getElementById("msg");
+      const erro = erroFormulario(dados);
+      if (erro) {
+        msg.textContent = "Erro ao cadastrar: " + erro;
+        msg.className = "msg erro";
+        return;
+      }
+      try {
+        await cadastrarMedico(dados);
+        msg.textContent = "Cadastro realizado! Redirecionando para login...";
+        msg.className = "msg sucesso";
+        setTimeout(() => window.location.href = "login.html", 1200);
+      } catch (e) {
+        msg.textContent = "Erro ao cadastrar: " + e.message;
+        msg.className = "msg erro";
+      }
+    }
+  </script>
+</body>
+</html>

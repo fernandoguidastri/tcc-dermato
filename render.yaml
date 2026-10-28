@@ -1,0 +1,36 @@
+# Blueprint do Render: cria os dois servicos de uma vez.
+#  - dermato-ai  : microservico de IA (Python/FastAPI)
+#  - dermato-app : backend Spring Boot + front-end estatico (mesmo servico)
+# O banco MySQL fica fora do Render (Aiven, plano gratuito), pois o Render
+# nao oferece MySQL gerenciado.
+services:
+  - type: web
+    name: dermato-ai
+    runtime: python
+    plan: free
+    rootDir: ai-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.3
+
+  - type: web
+    name: dermato-app
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /login.html
+    envVars:
+      - key: DB_URL          # jdbc:mysql://HOST:PORTA/defaultdb?sslMode=REQUIRED&serverTimezone=UTC
+        sync: false
+      - key: DB_USERNAME     # ex.: avnadmin
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: AI_SERVICE_URL  # https://dermato-ai.onrender.com/predict
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#132A3B">
+  <title>Pacientes - Plataforma Dermatologica</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6">
+          <circle cx="10.5" cy="10.5" r="6.5"/>
+          <circle cx="10.5" cy="10.5" r="2" fill="#fff" stroke="none"/>
+          <line x1="15.2" y1="15.2" x2="20.5" y2="20.5" stroke-linecap="round"/>
+        </svg>
+        <span class="brand-text">Plataforma<br>Dermatológica</span>
+      </div>
+      <nav>
+        <a href="dashboard.html">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>
+          Dashboard
+        </a>
+        <a href="pacientes.html" class="active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6" stroke-linecap="round"/></svg>
+          Pacientes
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <button onclick="logout()">Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="page-header">
+        <h1>Pacientes</h1>
+        <p>Cadastre, edite e acompanhe o histórico clínico de cada paciente.</p>
+      </div>
+
+      <div class="card" id="cardFormPaciente">
+        <h2 id="tituloForm">Novo paciente</h2>
+        <label>Nome</label>
+        <input type="text" id="nome">
+        <label>CPF</label>
+        <input type="text" id="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14" autocomplete="off">
+        <label>Data de nascimento</label>
+        <input type="date" id="dataNascimento">
+        <label>Telefone</label>
+        <input type="text" id="telefone">
+        <label>E-mail</label>
+        <input type="email" id="email">
+
+        <button class="primary" id="btnSalvar" onclick="salvarPaciente()">Cadastrar paciente</button>
+        <button class="secondary" id="btnCancelarEdicao" style="display:none;" onclick="cancelarEdicao()">Cancelar edição</button>
+        <div id="msg" class="msg"></div>
+      </div>
+
+      <div class="card">
+        <h2>Pacientes cadastrados</h2>
+        <div class="lista-controles">
+          <div class="campo-busca">
+            <label for="busca">Buscar por nome ou CPF</label>
+            <input type="search" id="busca" placeholder="Ex.: Maria ou 123.456" autocomplete="off">
+          </div>
+          <div class="campo-ordem">
+            <label for="ordenacao">Ordenar por</label>
+            <select id="ordenacao">
+              <option value="nome|asc">Nome (A–Z)</option>
+              <option value="nome|desc">Nome (Z–A)</option>
+              <option value="criadoEm|desc">Cadastro mais recente</option>
+              <option value="criadoEm|asc">Cadastro mais antigo</option>
+            </select>
+          </div>
+        </div>
+        <table id="tabelaPacientes" class="tabela-responsiva">
+          <thead><tr><th>Nome</th><th>CPF</th><th>Telefone</th><th>Ações</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="listaVazia" class="lista-vazia" style="display:none;"></p>
+        <div id="paginacao" class="paginacao" style="display:none;">
+          <button class="secondary" id="btnAnterior" onclick="mudarPagina(-1)">« Anterior</button>
+          <span id="paginacaoInfo" class="paginacao-info"></span>
+          <button class="secondary" id="btnProxima" onclick="mudarPagina(1)">Próxima »</button>
+        </div>
+        <div id="msgLista" class="msg erro"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    exigirLogin();
+
+    const TAMANHO_PAGINA = 10;
+
+    let pacienteEmEdicaoId = null;
+    let pacientesCache = [];     // pacientes da pagina atual (usado por Editar/Excluir)
+    let paginaAtual = 0;         // comeca em 0, como na API
+    let ultimoPedido = 0;        // evita que uma resposta antiga sobrescreva a mais nova
+    let temporizadorBusca = null;
+
+    function filtrosAtuais() {
+      const [ordenar, direcao] = document.getElementById("ordenacao").value.split("|");
+      return {
+        busca: document.getElementById("busca").value,
+        pagina: paginaAtual,
+        tamanho: TAMANHO_PAGINA,
+        ordenar,
+        direcao,
+      };
+    }
+
+    async function carregarPacientes() {
+      const pedido = ++ultimoPedido;
+      const filtros = filtrosAtuais();
+      const msgLista = document.getElementById("msgLista");
+      let dados;
+      try {
+        dados = await buscarPacientes(filtros);
+      } catch (e) {
+        msgLista.textContent = "Erro ao carregar pacientes: " + e.message;
+        return;
+      }
+      if (pedido !== ultimoPedido) return; // o usuario ja digitou outra coisa
+      msgLista.textContent = "";
+
+      // Se a pagina ficou vazia (ex.: excluiu o ultimo paciente dela), volta para a ultima existente
+      if (dados.conteudo.length === 0 && paginaAtual > 0 && dados.totalPaginas > 0) {
+        paginaAtual = dados.totalPaginas - 1;
+        return carregarPacientes();
+      }
+
+      pacientesCache = dados.conteudo;
+      renderizarPaginacao(dados, filtros.busca);
+
+      const tbody = document.querySelector("#tabelaPacientes tbody");
+      tbody.innerHTML = "";
+      pacientesCache.forEach(p => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td data-label="Nome">${p.nome}</td>
+          <td data-label="CPF">${p.cpf}</td>
+          <td data-label="Telefone">${p.telefone || "-"}</td>
+          <td class="acoes">
+            <a class="link-simple" href="consulta.html?pacienteId=${p.id}&nome=${encodeURIComponent(p.nome)}">Nova consulta</a><span class="sep"> · </span>
+            <a class="link-simple" href="historico.html?pacienteId=${p.id}&nome=${encodeURIComponent(p.nome)}">Histórico</a><span class="sep"> · </span>
+            <a class="link-simple" href="#" onclick="editarPaciente(${p.id}); return false;">Editar</a><span class="sep"> · </span>
+            <a class="link-simple" href="#" onclick="excluirPaciente(${p.id}); return false;">Excluir</a>
+          </td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderizarPaginacao(dados, busca) {
+      const vazio = dados.totalElementos === 0;
+      document.getElementById("tabelaPacientes").style.display = vazio ? "none" : "";
+      document.getElementById("paginacao").style.display = vazio ? "none" : "flex";
+
+      const listaVazia = document.getElementById("listaVazia");
+      listaVazia.style.display = vazio ? "block" : "none";
+      listaVazia.textContent = busca.trim()
+        ? "Nenhum paciente encontrado para esta busca."
+        : "Nenhum paciente cadastrado ainda.";
+
+      const total = dados.totalElementos;
+      document.getElementById("paginacaoInfo").textContent =
+        `Página ${dados.pagina + 1} de ${Math.max(dados.totalPaginas, 1)} (${total} paciente${total === 1 ? "" : "s"})`;
+      document.getElementById("btnAnterior").disabled = dados.pagina <= 0;
+      document.getElementById("btnProxima").disabled = dados.pagina >= dados.totalPaginas - 1;
+    }
+
+    function mudarPagina(delta) {
+      paginaAtual = Math.max(0, paginaAtual + delta);
+      carregarPacientes();
+    }
+
+    // Busca enquanto digita, esperando 300 ms de pausa para nao chamar o servidor a cada tecla
+    document.getElementById("busca").addEventListener("input", () => {
+      clearTimeout(temporizadorBusca);
+      temporizadorBusca = setTimeout(() => {
+        paginaAtual = 0;
+        carregarPacientes();
+      }, 300);
+    });
+
+    document.getElementById("ordenacao").addEventListener("change", () => {
+      paginaAtual = 0;
+      carregarPacientes();
+    });
+
+    // Data de hoje no fuso do navegador, no formato do input date (AAAA-MM-DD)
+    function hojeLocal() {
+      const agora = new Date();
+      return new Date(agora.getTime() - agora.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    }
+    document.getElementById("dataNascimento").max = hojeLocal();
+
+    document.getElementById("cpf").addEventListener("input", (e) => {
+      e.target.value = formatarCpf(e.target.value);
+    });
+
+    // Mesmas regras do backend; retorna a mensagem de erro ou null
+    function erroFormulario(dados) {
+      if (!dados.nome.trim()) return "O nome do paciente é obrigatório.";
+      if (!pacienteEmEdicaoId) {
+        if (!dados.cpf.trim()) return "O CPF do paciente é obrigatório.";
+        if (!cpfValido(dados.cpf)) return "CPF inválido. Confira os 11 números digitados.";
+      }
+      if (dados.email.trim() && !emailValido(dados.email)) return "E-mail inválido. Use o formato nome@exemplo.com.";
+      if (dados.dataNascimento && dados.dataNascimento > hojeLocal()) {
+        return "A data de nascimento não pode ser no futuro.";
+      }
+      return null;
+    }
+
+    async function salvarPaciente() {
+      const dados = {
+        nome: document.getElementById("nome").value,
+        cpf: document.getElementById("cpf").value,
+        dataNascimento: document.getElementById("dataNascimento").value,
+        telefone: document.getElementById("telefone").value,
+        email: document.getElementById("email").value,
+      };
+      const msg = document.getElementById("msg");
+      const erro = erroFormulario(dados);
+      if (erro) {
+        msg.textContent = "Erro: " + erro;
+        msg.className = "msg erro";
+        return;
+      }
+      try {
+        if (pacienteEmEdicaoId) {
+          await atualizarPaciente(pacienteEmEdicaoId, dados);
+          msg.textContent = "Paciente atualizado com sucesso.";
+        } else {
+          await criarPaciente(dados);
+          msg.textContent = "Paciente cadastrado com sucesso.";
+        }
+        msg.className = "msg sucesso";
+        cancelarEdicao();
+        carregarPacientes();
+      } catch (e) {
+        msg.textContent = "Erro: " + e.message;
+        msg.className = "msg erro";
+      }
+    }
+
+    function editarPaciente(id) {
+      const p = pacientesCache.find(x => x.id === id);
+      if (!p) return;
+      pacienteEmEdicaoId = id;
+      document.getElementById("tituloForm").textContent = "Editando: " + p.nome;
+      document.getElementById("nome").value = p.nome || "";
+      document.getElementById("cpf").value = p.cpf || "";
+      document.getElementById("cpf").readOnly = true; // o CPF nao pode ser alterado depois do cadastro
+      document.getElementById("cpf").title = "O CPF não pode ser alterado.";
+      document.getElementById("dataNascimento").value = p.dataNascimento || "";
+      document.getElementById("telefone").value = p.telefone || "";
+      document.getElementById("email").value = p.email || "";
+      document.getElementById("btnSalvar").textContent = "Salvar alterações";
+      document.getElementById("btnCancelarEdicao").style.display = "inline-block";
+      document.getElementById("cardFormPaciente").scrollIntoView({ behavior: "smooth" });
+    }
+
+    function cancelarEdicao() {
+      pacienteEmEdicaoId = null;
+      document.getElementById("tituloForm").textContent = "Novo paciente";
+      document.getElementById("nome").value = "";
+      document.getElementById("cpf").value = "";
+      document.getElementById("cpf").readOnly = false;
+      document.getElementById("cpf").title = "";
+      document.getElementById("dataNascimento").value = "";
+      document.getElementById("telefone").value = "";
+      document.getElementById("email").value = "";
+      document.getElementById("btnSalvar").textContent = "Cadastrar paciente";
+      document.getElementById("btnCancelarEdicao").style.display = "none";
+    }
+
+    async function excluirPaciente(id) {
+      const p = pacientesCache.find(x => x.id === id);
+      if (!confirm(`Tem certeza que deseja excluir o paciente "${p ? p.nome : id}"? Pacientes com consultas registradas não podem ser excluídos.`)) {
+        return;
+      }
+      const msg = document.getElementById("msg");
+      try {
+        await removerPaciente(id);
+        msg.textContent = "Paciente excluído.";
+        msg.className = "msg sucesso";
+        carregarPacientes();
+      } catch (e) {
+        msg.textContent = "Não foi possível excluir: " + e.message;
+        msg.className = "msg erro";
+      }
+    }
+
+    carregarPacientes();
+  </script>
+</body>
+</html>

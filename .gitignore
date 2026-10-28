@@ -1,0 +1,23 @@
+# Build / IDE
+backend/target/
+.idea/
+*.iml
+.vscode/
+# Uploads feitos durante testes locais
+backend/uploads/
+uploads/
+# Python
+ai-service/venv/
+ai-service/.venv/
+**/__pycache__/
+# Configuracao local com senha - NUNCA subir para o GitHub
+# (o modelo application-local.properties.example sobe normalmente)
+backend/src/main/resources/application-local.properties
+.env
+# Instrucoes do assistente de IA (ficam so na maquina do autor)
+CLAUDE.md
+.claude/
+# Logs e arquivos do sistema
+*.log
+Thumbs.db
+.DS_Store

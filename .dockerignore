@@ -1,0 +1,11 @@
+.git
+ai-service
+backend/target
+backend/uploads
+**/.idea
+**/*.iml
+# nunca embutir a senha local na imagem
+backend/src/main/resources/application-local.properties
+CLAUDE.md
+.claude
+.vscode

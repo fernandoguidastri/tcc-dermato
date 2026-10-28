@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#132A3B">
+  <title>Dashboard - Plataforma Dermatologica</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6">
+          <circle cx="10.5" cy="10.5" r="6.5"/>
+          <circle cx="10.5" cy="10.5" r="2" fill="#fff" stroke="none"/>
+          <line x1="15.2" y1="15.2" x2="20.5" y2="20.5" stroke-linecap="round"/>
+        </svg>
+        <span class="brand-text">Plataforma<br>Dermatológica</span>
+      </div>
+      <nav>
+        <a href="dashboard.html" class="active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>
+          Dashboard
+        </a>
+        <a href="pacientes.html">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6" stroke-linecap="round"/></svg>
+          Pacientes
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <button onclick="logout()">Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="page-header">
+        <h1>Visão geral</h1>
+        <p>Indicadores consolidados a partir dos dados cadastrados, para apoiar a priorização do seu trabalho.</p>
+      </div>
+
+      <div class="card">
+        <div class="kpi-grid" id="kpiGrid"></div>
+      </div>
+
+      <div class="card">
+        <h2>Casos pendentes de validação</h2>
+        <p>Análises de IA já geradas, mas que ainda não foram confirmadas por um médico (etapa <em>Human-in-the-loop</em>).</p>
+        <div id="alertaPendentes"></div>
+      </div>
+
+      <div class="card">
+        <h2>Distribuição das suspeitas indicadas pela IA</h2>
+        <p>Categoria com maior probabilidade retornada pela IA em cada imagem analisada. Não substitui o diagnóstico médico validado.</p>
+        <div id="graficoDistribuicao"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    exigirLogin();
+
+    async function carregarDashboard() {
+      const resumo = await buscarResumoDashboard();
+
+      document.getElementById("kpiGrid").innerHTML = `
+        <div class="kpi-box"><div class="kpi-valor">${resumo.totalPacientes}</div><div class="kpi-label">Pacientes cadastrados</div></div>
+        <div class="kpi-box"><div class="kpi-valor">${resumo.totalConsultas}</div><div class="kpi-label">Consultas registradas</div></div>
+        <div class="kpi-box"><div class="kpi-valor">${resumo.totalImagens}</div><div class="kpi-label">Imagens analisadas</div></div>
+        <div class="kpi-box"><div class="kpi-valor">${resumo.totalValidados}</div><div class="kpi-label">Diagnósticos validados</div></div>
+      `;
+
+      const alerta = document.getElementById("alertaPendentes");
+      alerta.innerHTML = resumo.totalPendentes > 0
+        ? `<span class="badge">${resumo.totalPendentes} caso(s) aguardando validação médica</span>
+           <p style="font-size:0.85rem; margin-top:10px;"><a class="link-simple" href="pacientes.html">Ir para Pacientes</a></p>`
+        : `<span class="badge ok">Nenhum caso pendente — tudo validado</span>`;
+
+      const grafico = document.getElementById("graficoDistribuicao");
+      const entradas = Object.entries(resumo.distribuicaoDiagnosticoIA || {});
+      if (entradas.length === 0) {
+        grafico.innerHTML = "<p style='color:var(--ink-soft); font-size:0.85rem;'>Ainda não há imagens analisadas suficientes para gerar este gráfico.</p>";
+        return;
+      }
+      const total = entradas.reduce((soma, [, qtd]) => soma + qtd, 0);
+      grafico.innerHTML = entradas
+        .sort((a, b) => b[1] - a[1])
+        .map(([categoria, qtd]) => {
+          const pct = Math.round((qtd / total) * 100);
+          return `<div class="prob-row">
+                    <div>${categoria} — ${qtd} caso(s) (${pct}%)</div>
+                    <div class="prob-bar-bg"><div class="prob-bar" style="width:${pct}%"></div></div>
+                  </div>`;
+        }).join("");
+    }
+
+    carregarDashboard();
+  </script>
+</body>
+</html>

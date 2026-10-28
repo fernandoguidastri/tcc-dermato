@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#132A3B">
+  <title>Entrar - Plataforma Dermatologica</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="auth-shell">
+    <div class="auth-card">
+      <div class="auth-brand">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#132A3B" stroke-width="1.6">
+          <circle cx="10.5" cy="10.5" r="6.5"/>
+          <circle cx="10.5" cy="10.5" r="2" fill="#132A3B" stroke="none"/>
+          <line x1="15.2" y1="15.2" x2="20.5" y2="20.5" stroke-linecap="round"/>
+        </svg>
+        <span class="brand-text">Plataforma Dermatológica</span>
+      </div>
+
+      <h2>Entrar</h2>
+      <p>Acesso do profissional de saúde</p>
+
+      <label>E-mail</label>
+      <input type="email" id="email" placeholder="medico@exemplo.com">
+
+      <label>Senha</label>
+      <input type="password" id="senha" placeholder="********">
+
+      <button class="primary" onclick="fazerLogin()" style="width:100%;">Entrar</button>
+      <div id="msg" class="msg"></div>
+
+      <p style="margin-top:22px; font-size:0.85rem; color:var(--ink-soft);">
+        Ainda não tem cadastro? <a class="link-simple" href="cadastro-medico.html">Cadastre-se como médico</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    async function fazerLogin() {
+      const email = document.getElementById("email").value;
+      const senha = document.getElementById("senha").value;
+      const msg = document.getElementById("msg");
+      msg.textContent = "";
+      try {
+        const dados = await login(email, senha);
+        setSessao(dados.token, dados.nome, dados.email);
+        window.location.href = "dashboard.html";
+      } catch (e) {
+        msg.textContent = "Falha no login: verifique e-mail e senha.";
+        msg.className = "msg erro";
+      }
+    }
+  </script>
+</body>
+</html>

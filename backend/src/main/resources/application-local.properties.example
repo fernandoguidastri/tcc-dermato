@@ -1,0 +1,6 @@
+# MODELO. Copie este arquivo para "application-local.properties" (mesma pasta)
+# e coloque a senha do seu MySQL local. A copia e ignorada pelo Git, entao a
+# senha nunca vai para o GitHub.
+spring.datasource.password=SUA_SENHA_AQUI
+# Descomente para ver as queries SQL no console:
+# spring.jpa.show-sql=true

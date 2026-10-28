@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#132A3B">
+  <title>Histórico - Plataforma Dermatologica</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6">
+          <circle cx="10.5" cy="10.5" r="6.5"/>
+          <circle cx="10.5" cy="10.5" r="2" fill="#fff" stroke="none"/>
+          <line x1="15.2" y1="15.2" x2="20.5" y2="20.5" stroke-linecap="round"/>
+        </svg>
+        <span class="brand-text">Plataforma<br>Dermatológica</span>
+      </div>
+      <nav>
+        <a href="dashboard.html">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>
+          Dashboard
+        </a>
+        <a href="pacientes.html" class="active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6" stroke-linecap="round"/></svg>
+          Pacientes
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <button onclick="logout()">Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="page-header">
+        <h1>Histórico — <span id="nomePaciente"></span></h1>
+        <p><a class="link-simple" href="#" id="linkNovaConsulta">+ Registrar nova consulta para este paciente</a></p>
+      </div>
+
+      <div id="listaConsultas"></div>
+
+      <div class="card" id="cardVazio" style="display:none;">
+        <p style="color:var(--ink-soft); margin:0;">Este paciente ainda não possui consultas registradas.</p>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    exigirLogin();
+
+    const params = new URLSearchParams(window.location.search);
+    const pacienteId = params.get("pacienteId");
+    const nomePaciente = params.get("nome") || "";
+    document.getElementById("nomePaciente").textContent = nomePaciente;
+    document.getElementById("linkNovaConsulta").href =
+      `consulta.html?pacienteId=${pacienteId}&nome=${encodeURIComponent(nomePaciente)}`;
+
+    function formatarData(iso) {
+      if (!iso) return "-";
+      return new Date(iso).toLocaleString("pt-BR");
+    }
+
+    function renderProbabilidades(vetorJson) {
+      let probs;
+      try { probs = JSON.parse(vetorJson); } catch (e) { return "<p class='msg erro'>Resultado da IA indisponível.</p>"; }
+      if (probs.erro) return `<p class="msg erro">${probs.erro}</p>`;
+
+      return Object.entries(probs).map(([categoria, valor]) => {
+        const pct = Math.round(valor * 100);
+        return `<div class="prob-row">
+                  <div>${categoria} — ${pct}%</div>
+                  <div class="prob-bar-bg"><div class="prob-bar" style="width:${pct}%"></div></div>
+                </div>`;
+      }).join("");
+    }
+
+    async function carregarHistorico() {
+      const consultas = await listarConsultasDetalhado(pacienteId);
+
+      if (!consultas || consultas.length === 0) {
+        document.getElementById("cardVazio").style.display = "block";
+        return;
+      }
+
+      const container = document.getElementById("listaConsultas");
+      container.innerHTML = "";
+      consultas.sort((a, b) => new Date(b.consulta.dataConsulta) - new Date(a.consulta.dataConsulta));
+
+      consultas.forEach(item => {
+        const consulta = item.consulta;
+        const card = document.createElement("div");
+        card.className = "card";
+
+        let imagensHtml = "";
+        if (!item.imagens || item.imagens.length === 0) {
+          imagensHtml = "<p style='color:var(--ink-soft); font-size:0.85rem; margin-top:12px;'>Nenhuma imagem enviada nesta consulta.</p>";
+        } else {
+          imagensHtml = item.imagens.map(img => {
+            const caminho = img.imagem.caminhoArquivo.replace(/\\/g, "/");
+            const urlImagem = "/" + caminho.substring(caminho.indexOf("uploads/"));
+            const resultado = img.resultado;
+
+            let blocoResultado;
+            if (!resultado) {
+              blocoResultado = "<p class='msg erro'>Ainda sem resultado da IA.</p>";
+            } else {
+              const badge = resultado.validado
+                ? `<span class="badge ok">Validado: ${resultado.diagnosticoValidado || ""}</span>`
+                : `<span class="badge">Aguardando validação do médico</span>`;
+              blocoResultado = renderProbabilidades(resultado.vetorProbabilidades) + `<div style="margin-top:8px;">${badge}</div>`;
+            }
+
+            return `
+              <div class="hist-item">
+                <img src="${urlImagem}" alt="Imagem da lesão">
+                <div class="hist-resultado">${blocoResultado}</div>
+              </div>`;
+          }).join("");
+        }
+
+        // Rastreabilidade (modelo de clinica): mostra qual medico realizou a consulta
+        const medico = consulta.medico;
+        const atendidoPor = medico
+          ? `<div style="margin-top:4px; font-size:0.88rem; color:var(--ink-soft);">Atendido por: <strong>${medico.nome}</strong> (${medico.crm})</div>`
+          : "";
+
+        card.innerHTML = `
+          <h2>Consulta em ${formatarData(consulta.dataConsulta)}</h2>
+          ${atendidoPor}
+          <p style="margin-top:6px;">${consulta.observacoes || "<em>Sem observações registradas.</em>"}</p>
+          ${imagensHtml}
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    carregarHistorico();
+  </script>
+</body>
+</html>

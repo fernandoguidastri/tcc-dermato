@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#132A3B">
+  <title>Consulta - Plataforma Dermatologica</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6">
+          <circle cx="10.5" cy="10.5" r="6.5"/>
+          <circle cx="10.5" cy="10.5" r="2" fill="#fff" stroke="none"/>
+          <line x1="15.2" y1="15.2" x2="20.5" y2="20.5" stroke-linecap="round"/>
+        </svg>
+        <span class="brand-text">Plataforma<br>Dermatológica</span>
+      </div>
+      <nav>
+        <a href="dashboard.html">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1.2"/><rect x="14" y="3" width="7" height="7" rx="1.2"/><rect x="3" y="14" width="7" height="7" rx="1.2"/><rect x="14" y="14" width="7" height="7" rx="1.2"/></svg>
+          Dashboard
+        </a>
+        <a href="pacientes.html" class="active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6" stroke-linecap="round"/></svg>
+          Pacientes
+        </a>
+      </nav>
+      <div class="sidebar-footer">
+        <button onclick="logout()">Sair</button>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="page-header">
+        <h1>Nova consulta — <span id="nomePaciente"></span></h1>
+        <p>Registre a consulta, envie a imagem da lesão e valide o resultado sugerido pela IA.</p>
+      </div>
+
+      <div class="card">
+        <h2>1. Dados da consulta</h2>
+        <label>Observações</label>
+        <textarea id="observacoes" rows="3" placeholder="Ex: lesão pigmentada no antebraço esquerdo"></textarea>
+        <button class="primary" onclick="iniciarConsulta()">Registrar consulta</button>
+        <div id="msgConsulta" class="msg"></div>
+      </div>
+
+      <div class="card" id="cardUpload" style="display:none;">
+        <h2>2. Imagem da lesão</h2>
+        <p>Tire uma foto da lesão ou escolha uma imagem já salva. A foto é reduzida automaticamente antes do envio.</p>
+
+        <!-- Dois inputs escondidos: um abre a camera traseira (capture), outro a galeria/arquivos -->
+        <input type="file" id="inputCamera" accept="image/*" capture="environment" hidden onchange="selecionarArquivo(this)">
+        <input type="file" id="inputGaleria" accept="image/*" hidden onchange="selecionarArquivo(this)">
+
+        <div class="acoes-foto">
+          <button type="button" class="btn-outline btn-camera" onclick="document.getElementById('inputCamera').click()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l1.6-2.4h6.8L17 8h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.6"/></svg>
+            Tirar foto
+          </button>
+          <button type="button" class="btn-outline" onclick="document.getElementById('inputGaleria').click()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="M21 16l-5-5-8 8"/></svg>
+            Escolher da galeria
+          </button>
+        </div>
+
+        <img id="previewLocal" alt="Pré-visualização da foto" style="display:none; margin-top:14px; width:160px; height:160px; object-fit:cover; border-radius:6px; border:1px solid var(--border);">
+        <div id="infoFoto" class="info-foto"></div>
+
+        <button class="primary" id="btnEnviar" onclick="enviarImagem()">Enviar para análise da IA</button>
+        <div id="msgUpload" class="msg"></div>
+      </div>
+
+      <div class="card" id="cardResultado" style="display:none;">
+        <h2>3. Resultado da IA e validação médica</h2>
+        <p>Estes percentuais são apenas suporte à decisão. O diagnóstico final deve ser validado pelo médico.</p>
+        <img id="imagemEnviada" style="width:150px; height:150px; object-fit:cover; border-radius:6px; border:1px solid var(--border); margin-bottom:16px;">
+        <div id="probabilidades"></div>
+
+        <label style="margin-top:20px;">Diagnóstico final validado pelo médico</label>
+        <input type="text" id="diagnosticoFinal" placeholder="Ex: Nevo benigno - sem indicação de biópsia">
+        <button class="primary" onclick="validar()">Confirmar e salvar no prontuário</button>
+        <div id="msgValidacao" class="msg"></div>
+        <span id="badgeValidado"></span>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script>
+    exigirLogin();
+
+    const params = new URLSearchParams(window.location.search);
+    const pacienteId = params.get("pacienteId");
+    document.getElementById("nomePaciente").textContent = params.get("nome") || "";
+
+    let consultaAtual = null;
+    let resultadoAtual = null;
+
+    async function iniciarConsulta() {
+      const observacoes = document.getElementById("observacoes").value;
+      const msg = document.getElementById("msgConsulta");
+      try {
+        consultaAtual = await criarConsulta(pacienteId, observacoes);
+        msg.textContent = "Consulta registrada (id " + consultaAtual.id + "). Agora envie a imagem da lesão.";
+        msg.className = "msg sucesso";
+        document.getElementById("cardUpload").style.display = "block";
+      } catch (e) {
+        msg.textContent = "Erro: " + e.message;
+        msg.className = "msg erro";
+      }
+    }
+
+    // ----- Captura / selecao da foto -----
+    let arquivoPronto = null; // arquivo ja reduzido, pronto para enviar
+
+    function formatarTamanho(bytes) {
+      return bytes >= 1048576 ? (bytes / 1048576).toFixed(1) + " MB" : Math.round(bytes / 1024) + " KB";
+    }
+
+    // Reduz a foto no proprio aparelho (celulares geram fotos de 5-12 MB; o limite do servidor e 10 MB).
+    // Mantem a proporcao, limita o maior lado a 1600 px e converte para JPEG.
+    async function comprimirImagem(file, maxLado = 1600, qualidade = 0.85) {
+      let bitmap;
+      try {
+        bitmap = await createImageBitmap(file, { imageOrientation: "from-image" }); // respeita a rotacao da foto
+      } catch (e1) {
+        try { bitmap = await createImageBitmap(file); }
+        catch (e2) { return { arquivo: file, largura: null, altura: null }; } // formato nao suportado: envia o original
+      }
+      const escala = Math.min(1, maxLado / Math.max(bitmap.width, bitmap.height));
+      const largura = Math.round(bitmap.width * escala);
+      const altura = Math.round(bitmap.height * escala);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = largura;
+      canvas.height = altura;
+      canvas.getContext("2d").drawImage(bitmap, 0, 0, largura, altura);
+      if (bitmap.close) bitmap.close();
+
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", qualidade));
+      if (!blob || (escala === 1 && blob.size >= file.size)) {
+        return { arquivo: file, largura: bitmap.width, altura: bitmap.height };
+      }
+      const nome = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+      return { arquivo: new File([blob], nome, { type: "image/jpeg" }), largura, altura };
+    }
+
+    async function selecionarArquivo(input) {
+      const original = input.files[0];
+      const preview = document.getElementById("previewLocal");
+      const info = document.getElementById("infoFoto");
+      const msg = document.getElementById("msgUpload");
+      msg.textContent = "";
+      arquivoPronto = null;
+      if (!original) { preview.style.display = "none"; info.textContent = ""; return; }
+
+      info.textContent = "Preparando a foto...";
+      const resultado = await comprimirImagem(original);
+      arquivoPronto = resultado.arquivo;
+
+      preview.src = URL.createObjectURL(arquivoPronto);
+      preview.style.display = "block";
+      info.textContent = resultado.arquivo === original
+        ? "Foto original: " + formatarTamanho(original.size)
+        : `Foto reduzida: ${formatarTamanho(original.size)} → ${formatarTamanho(arquivoPronto.size)} (${resultado.largura}×${resultado.altura})`;
+
+      // permite escolher o mesmo arquivo de novo depois, se necessario
+      input.value = "";
+    }
+
+    async function enviarImagem() {
+      const msg = document.getElementById("msgUpload");
+      const btn = document.getElementById("btnEnviar");
+      if (!arquivoPronto) { msg.textContent = "Tire uma foto ou escolha uma imagem primeiro."; msg.className = "msg erro"; return; }
+
+      btn.disabled = true;
+      btn.textContent = "Analisando...";
+      msg.textContent = "Enviando e analisando a imagem. Na primeira análise após um tempo parado, pode levar cerca de 1 minuto.";
+      msg.className = "msg";
+      try {
+        resultadoAtual = await uploadImagem(consultaAtual.id, arquivoPronto);
+        msg.textContent = "Imagem enviada e analisada pela IA.";
+        msg.className = "msg sucesso";
+        exibirResultado(resultadoAtual);
+        document.getElementById("cardResultado").scrollIntoView({ behavior: "smooth" });
+      } catch (e) {
+        msg.textContent = "Erro: " + e.message;
+        msg.className = "msg erro";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Enviar para análise da IA";
+      }
+    }
+
+    function exibirResultado(resultado) {
+      document.getElementById("cardResultado").style.display = "block";
+
+      const imagemEl = document.getElementById("imagemEnviada");
+      const caminho = resultado.imagem.caminhoArquivo.replace(/\\/g, "/");
+      imagemEl.src = "/" + caminho.substring(caminho.indexOf("uploads/"));
+
+      const div = document.getElementById("probabilidades");
+      div.innerHTML = "";
+
+      let probs;
+      try { probs = JSON.parse(resultado.vetorProbabilidades); } catch (e) { probs = {}; }
+
+      Object.entries(probs).forEach(([categoria, valor]) => {
+        const pct = Math.round(valor * 100);
+        const row = document.createElement("div");
+        row.className = "prob-row";
+        row.innerHTML = `
+          <div>${categoria} — ${pct}%</div>
+          <div class="prob-bar-bg"><div class="prob-bar" style="width:${pct}%"></div></div>`;
+        div.appendChild(row);
+      });
+    }
+
+    async function validar() {
+      const diagnostico = document.getElementById("diagnosticoFinal").value;
+      const msg = document.getElementById("msgValidacao");
+      try {
+        await validarResultado(resultadoAtual.id, diagnostico);
+        msg.textContent = "Diagnóstico validado e salvo no prontuário do paciente.";
+        msg.className = "msg sucesso";
+        document.getElementById("badgeValidado").innerHTML = '<span class="badge ok">Validado pelo médico</span>';
+      } catch (e) {
+        msg.textContent = "Erro: " + e.message;
+        msg.className = "msg erro";
+      }
+    }
+  </script>
+</body>
+</html>
