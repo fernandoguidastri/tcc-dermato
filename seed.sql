@@ -18,6 +18,9 @@
 -- Selecione o schema correto no Workbench antes de executar:
 --   local: dermato_db    |    Aiven (nuvem): defaultdb
 
+-- As datas com NOW() ficam no horario de Brasilia (a Aiven roda em UTC)
+SET time_zone = '-03:00';
+
 -- ----- Medico de demonstracao -----
 -- (a senha ja esta em hash BCrypt correspondente a "Senha123!")
 INSERT INTO medicos (nome, email, senha, crm, criado_em)
