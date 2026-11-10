@@ -9,6 +9,8 @@ import com.tcc.dermato.repository.ConsultaRepository;
 import com.tcc.dermato.repository.ImagemDermatologicaRepository;
 import com.tcc.dermato.repository.ResultadoIARepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
@@ -33,6 +35,8 @@ import java.util.UUID;
 @RequestMapping("/api/imagens")
 @Tag(name = "4. Imagens e IA", description = "Upload de imagens dermatológicas e integração com o microsserviço de IA")
 public class ImagemController {
+
+    private static final Logger log = LoggerFactory.getLogger(ImagemController.class);
 
     private final ImagemDermatologicaRepository imagemRepository;
     private final ConsultaRepository consultaRepository;
@@ -101,6 +105,8 @@ public class ImagemController {
             vetorProbabilidadesJson = chamarIA(arquivo.getBytes(), arquivo.getOriginalFilename());
         } catch (Exception e) {
             // Se o microservico de IA estiver indisponivel, registra um resultado pendente
+            // (o motivo vai para o log: console do IntelliJ ou aba Logs do Render)
+            log.warn("Falha ao chamar a IA em {} (upload da imagem {}): {}", aiServiceUrl, imagem.getId(), e.toString());
             vetorProbabilidadesJson = "{\"erro\":\"microservico de IA indisponivel\"}";
         }
 
@@ -144,6 +150,7 @@ public class ImagemController {
             vetorProbabilidadesJson = chamarIA(Files.readAllBytes(caminho), caminho.getFileName().toString());
         } catch (Exception e) {
             // Diferente do upload: aqui mantemos o resultado anterior em vez de sobrescrever com erro
+            log.warn("Falha ao chamar a IA em {} (reanalise da imagem {}): {}", aiServiceUrl, id, e.toString());
             return ResponseEntity.badRequest().body(Map.of("erro",
                     "Microservico de IA indisponivel. Tente novamente em instantes."));
         }

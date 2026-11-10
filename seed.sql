@@ -95,7 +95,7 @@ INSERT INTO imagens_dermatologicas (consulta_id, caminho_arquivo, data_upload)
 VALUES (@c, 'uploads/seed-lesao-1.jpg', DATE_SUB(NOW(), INTERVAL 40 DAY));
 SET @img = LAST_INSERT_ID();
 INSERT INTO resultados_ia (imagem_id, vetor_probabilidades, diagnostico_validado, validado, data_resultado, data_validacao)
-VALUES (@img, '{"Melanoma":0.12,"Nevo":0.71,"Ceratose":0.08,"Carcinoma_Basocelular":0.05,"Dermatite":0.04}',
+VALUES (@img, '{"Nevo melanocítico":0.78,"Lesão queratósica benigna":0.09,"Melanoma":0.08,"Dermatofibroma":0.02,"Carcinoma basocelular":0.01,"Ceratose actínica / Doença de Bowen":0.01,"Lesão vascular":0.01}',
         'Nevo melanocitico benigno. Sem indicacao de biopsia. Retorno em 12 meses.', 1,
         DATE_SUB(NOW(), INTERVAL 40 DAY), DATE_SUB(NOW(), INTERVAL 39 DAY));
 
@@ -106,7 +106,7 @@ INSERT INTO imagens_dermatologicas (consulta_id, caminho_arquivo, data_upload)
 VALUES (@c, 'uploads/seed-lesao-2.jpg', DATE_SUB(NOW(), INTERVAL 5 DAY));
 SET @img = LAST_INSERT_ID();
 INSERT INTO resultados_ia (imagem_id, vetor_probabilidades, diagnostico_validado, validado, data_resultado, data_validacao)
-VALUES (@img, '{"Melanoma":0.09,"Nevo":0.78,"Ceratose":0.06,"Carcinoma_Basocelular":0.04,"Dermatite":0.03}',
+VALUES (@img, '{"Nevo melanocítico":0.83,"Melanoma":0.07,"Lesão queratósica benigna":0.05,"Dermatofibroma":0.02,"Carcinoma basocelular":0.01,"Ceratose actínica / Doença de Bowen":0.01,"Lesão vascular":0.01}',
         'Sem alteracoes em relacao a consulta anterior.', 1,
         DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY));
 
@@ -118,7 +118,7 @@ INSERT INTO imagens_dermatologicas (consulta_id, caminho_arquivo, data_upload)
 VALUES (@c, 'uploads/seed-lesao-3.jpg', DATE_SUB(NOW(), INTERVAL 2 DAY));
 SET @img = LAST_INSERT_ID();
 INSERT INTO resultados_ia (imagem_id, vetor_probabilidades, validado, data_resultado)
-VALUES (@img, '{"Melanoma":0.03,"Nevo":0.10,"Ceratose":0.07,"Carcinoma_Basocelular":0.05,"Dermatite":0.75}',
+VALUES (@img, '{"Lesão queratósica benigna":0.66,"Nevo melanocítico":0.12,"Ceratose actínica / Doença de Bowen":0.09,"Melanoma":0.06,"Carcinoma basocelular":0.04,"Dermatofibroma":0.02,"Lesão vascular":0.01}',
         0, DATE_SUB(NOW(), INTERVAL 2 DAY));
 
 -- --- Paciente 3: Joao Pedro - 1 consulta validada com suspeita relevante ---
@@ -129,7 +129,7 @@ INSERT INTO imagens_dermatologicas (consulta_id, caminho_arquivo, data_upload)
 VALUES (@c, 'uploads/seed-lesao-4.jpg', DATE_SUB(NOW(), INTERVAL 15 DAY));
 SET @img = LAST_INSERT_ID();
 INSERT INTO resultados_ia (imagem_id, vetor_probabilidades, diagnostico_validado, validado, data_resultado, data_validacao)
-VALUES (@img, '{"Melanoma":0.64,"Nevo":0.18,"Ceratose":0.05,"Carcinoma_Basocelular":0.09,"Dermatite":0.04}',
+VALUES (@img, '{"Melanoma":0.64,"Nevo melanocítico":0.21,"Lesão queratósica benigna":0.09,"Carcinoma basocelular":0.03,"Ceratose actínica / Doença de Bowen":0.01,"Dermatofibroma":0.01,"Lesão vascular":0.01}',
         'Suspeita compativel com o alerta da IA. Paciente encaminhado para biopsia excisional.', 1,
         DATE_SUB(NOW(), INTERVAL 15 DAY), DATE_SUB(NOW(), INTERVAL 14 DAY));
 
@@ -141,7 +141,7 @@ INSERT INTO imagens_dermatologicas (consulta_id, caminho_arquivo, data_upload)
 VALUES (@c, 'uploads/seed-lesao-5.jpg', DATE_SUB(NOW(), INTERVAL 1 DAY));
 SET @img = LAST_INSERT_ID();
 INSERT INTO resultados_ia (imagem_id, vetor_probabilidades, validado, data_resultado)
-VALUES (@img, '{"Melanoma":0.05,"Nevo":0.09,"Ceratose":0.68,"Carcinoma_Basocelular":0.13,"Dermatite":0.05}',
+VALUES (@img, '{"Ceratose actínica / Doença de Bowen":0.68,"Lesão queratósica benigna":0.14,"Carcinoma basocelular":0.11,"Melanoma":0.04,"Nevo melanocítico":0.01,"Dermatofibroma":0.01,"Lesão vascular":0.01}',
         0, DATE_SUB(NOW(), INTERVAL 1 DAY));
 
 -- --- Paciente 5: Ricardo - 2 consultas, uma validada e uma pendente ---
@@ -152,7 +152,7 @@ INSERT INTO imagens_dermatologicas (consulta_id, caminho_arquivo, data_upload)
 VALUES (@c, 'uploads/seed-lesao-6.jpg', DATE_SUB(NOW(), INTERVAL 60 DAY));
 SET @img = LAST_INSERT_ID();
 INSERT INTO resultados_ia (imagem_id, vetor_probabilidades, diagnostico_validado, validado, data_resultado, data_validacao)
-VALUES (@img, '{"Melanoma":0.07,"Nevo":0.05,"Ceratose":0.11,"Carcinoma_Basocelular":0.70,"Dermatite":0.07}',
+VALUES (@img, '{"Carcinoma basocelular":0.7,"Ceratose actínica / Doença de Bowen":0.12,"Lesão queratósica benigna":0.08,"Melanoma":0.04,"Nevo melanocítico":0.03,"Lesão vascular":0.02,"Dermatofibroma":0.01}',
         'Carcinoma basocelular confirmado por biopsia. Paciente encaminhado para exerese cirurgica.', 1,
         DATE_SUB(NOW(), INTERVAL 60 DAY), DATE_SUB(NOW(), INTERVAL 55 DAY));
 
@@ -163,7 +163,7 @@ INSERT INTO imagens_dermatologicas (consulta_id, caminho_arquivo, data_upload)
 VALUES (@c, 'uploads/seed-lesao-7.jpg', DATE_SUB(NOW(), INTERVAL 3 DAY));
 SET @img = LAST_INSERT_ID();
 INSERT INTO resultados_ia (imagem_id, vetor_probabilidades, validado, data_resultado)
-VALUES (@img, '{"Melanoma":0.14,"Nevo":0.62,"Ceratose":0.10,"Carcinoma_Basocelular":0.08,"Dermatite":0.06}',
+VALUES (@img, '{"Nevo melanocítico":0.62,"Melanoma":0.19,"Lesão queratósica benigna":0.11,"Dermatofibroma":0.04,"Carcinoma basocelular":0.02,"Ceratose actínica / Doença de Bowen":0.01,"Lesão vascular":0.01}',
         0, DATE_SUB(NOW(), INTERVAL 3 DAY));
 
 -- --- Paciente 6: Fernanda - 1 consulta validada ---
@@ -174,7 +174,7 @@ INSERT INTO imagens_dermatologicas (consulta_id, caminho_arquivo, data_upload)
 VALUES (@c, 'uploads/seed-lesao-8.jpg', DATE_SUB(NOW(), INTERVAL 20 DAY));
 SET @img = LAST_INSERT_ID();
 INSERT INTO resultados_ia (imagem_id, vetor_probabilidades, diagnostico_validado, validado, data_resultado, data_validacao)
-VALUES (@img, '{"Melanoma":0.06,"Nevo":0.73,"Ceratose":0.09,"Carcinoma_Basocelular":0.05,"Dermatite":0.07}',
+VALUES (@img, '{"Nevo melanocítico":0.81,"Lesão queratósica benigna":0.08,"Melanoma":0.06,"Dermatofibroma":0.02,"Carcinoma basocelular":0.01,"Ceratose actínica / Doença de Bowen":0.01,"Lesão vascular":0.01}',
         'Nevo estavel, sem alteracoes suspeitas. Manter rotina anual.', 1,
         DATE_SUB(NOW(), INTERVAL 20 DAY), DATE_SUB(NOW(), INTERVAL 19 DAY));
 
@@ -191,6 +191,40 @@ VALUES (@medico_id, @p8, DATE_SUB(NOW(), INTERVAL 10 DAY), 'Avaliacao de rotina,
 --   - 20 pacientes (8 com consultas + 12 extras), 10 consultas, 8 imagens analisadas
 --   - Tela de Pacientes: 2 paginas de 10
 --   - 5 diagnosticos validados, 3 pendentes de validacao
---   - Distribuicao de suspeitas: Nevo (4), Melanoma (1), Ceratose (1),
---     Carcinoma_Basocelular (1), Dermatite (1)
+--   - Distribuicao de suspeitas: Nevo melanocitico (4), Melanoma (1),
+--     Lesao queratosica benigna (1), Ceratose actinica / Doenca de Bowen (1),
+--     Carcinoma basocelular (1)
 -- =====================================================================
+
+-- =====================================================================
+-- Banco populado com uma versao ANTIGA deste seed (vetores do simulador,
+-- com "Dermatite"): NAO rode o script inteiro. Rode so o bloco abaixo
+-- (tire os "-- " da frente, selecione e Ctrl+Shift+Enter) para trocar os
+-- vetores pelas 7 classes do modelo real (HAM10000), sem apagar nada.
+-- =====================================================================
+-- SET SQL_SAFE_UPDATES = 0;
+-- UPDATE resultados_ia r JOIN imagens_dermatologicas i ON i.id = r.imagem_id
+--   SET r.vetor_probabilidades = '{"Nevo melanocítico":0.78,"Lesão queratósica benigna":0.09,"Melanoma":0.08,"Dermatofibroma":0.02,"Carcinoma basocelular":0.01,"Ceratose actínica / Doença de Bowen":0.01,"Lesão vascular":0.01}'
+--   WHERE i.caminho_arquivo = 'uploads/seed-lesao-1.jpg';
+-- UPDATE resultados_ia r JOIN imagens_dermatologicas i ON i.id = r.imagem_id
+--   SET r.vetor_probabilidades = '{"Nevo melanocítico":0.83,"Melanoma":0.07,"Lesão queratósica benigna":0.05,"Dermatofibroma":0.02,"Carcinoma basocelular":0.01,"Ceratose actínica / Doença de Bowen":0.01,"Lesão vascular":0.01}'
+--   WHERE i.caminho_arquivo = 'uploads/seed-lesao-2.jpg';
+-- UPDATE resultados_ia r JOIN imagens_dermatologicas i ON i.id = r.imagem_id
+--   SET r.vetor_probabilidades = '{"Lesão queratósica benigna":0.66,"Nevo melanocítico":0.12,"Ceratose actínica / Doença de Bowen":0.09,"Melanoma":0.06,"Carcinoma basocelular":0.04,"Dermatofibroma":0.02,"Lesão vascular":0.01}'
+--   WHERE i.caminho_arquivo = 'uploads/seed-lesao-3.jpg';
+-- UPDATE resultados_ia r JOIN imagens_dermatologicas i ON i.id = r.imagem_id
+--   SET r.vetor_probabilidades = '{"Melanoma":0.64,"Nevo melanocítico":0.21,"Lesão queratósica benigna":0.09,"Carcinoma basocelular":0.03,"Ceratose actínica / Doença de Bowen":0.01,"Dermatofibroma":0.01,"Lesão vascular":0.01}'
+--   WHERE i.caminho_arquivo = 'uploads/seed-lesao-4.jpg';
+-- UPDATE resultados_ia r JOIN imagens_dermatologicas i ON i.id = r.imagem_id
+--   SET r.vetor_probabilidades = '{"Ceratose actínica / Doença de Bowen":0.68,"Lesão queratósica benigna":0.14,"Carcinoma basocelular":0.11,"Melanoma":0.04,"Nevo melanocítico":0.01,"Dermatofibroma":0.01,"Lesão vascular":0.01}'
+--   WHERE i.caminho_arquivo = 'uploads/seed-lesao-5.jpg';
+-- UPDATE resultados_ia r JOIN imagens_dermatologicas i ON i.id = r.imagem_id
+--   SET r.vetor_probabilidades = '{"Carcinoma basocelular":0.7,"Ceratose actínica / Doença de Bowen":0.12,"Lesão queratósica benigna":0.08,"Melanoma":0.04,"Nevo melanocítico":0.03,"Lesão vascular":0.02,"Dermatofibroma":0.01}'
+--   WHERE i.caminho_arquivo = 'uploads/seed-lesao-6.jpg';
+-- UPDATE resultados_ia r JOIN imagens_dermatologicas i ON i.id = r.imagem_id
+--   SET r.vetor_probabilidades = '{"Nevo melanocítico":0.62,"Melanoma":0.19,"Lesão queratósica benigna":0.11,"Dermatofibroma":0.04,"Carcinoma basocelular":0.02,"Ceratose actínica / Doença de Bowen":0.01,"Lesão vascular":0.01}'
+--   WHERE i.caminho_arquivo = 'uploads/seed-lesao-7.jpg';
+-- UPDATE resultados_ia r JOIN imagens_dermatologicas i ON i.id = r.imagem_id
+--   SET r.vetor_probabilidades = '{"Nevo melanocítico":0.81,"Lesão queratósica benigna":0.08,"Melanoma":0.06,"Dermatofibroma":0.02,"Carcinoma basocelular":0.01,"Ceratose actínica / Doença de Bowen":0.01,"Lesão vascular":0.01}'
+--   WHERE i.caminho_arquivo = 'uploads/seed-lesao-8.jpg';
+-- SET SQL_SAFE_UPDATES = 1;

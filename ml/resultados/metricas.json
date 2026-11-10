@@ -1,0 +1,199 @@
+{
+  "gerado_em": "2026-11-06T19:44:35",
+  "modo_teste": false,
+  "modelo": "EfficientNet-B0 pré-treinada no ImageNet, ajuste fino em duas fases",
+  "dataset": "HAM10000 (Tschandl, Rosendahl e Kittler, 2018)",
+  "divisao": {
+    "criterio": "lesion_id (StratifiedGroupKFold, 70/15/15)",
+    "treino": {
+      "imagens": 7011,
+      "lesoes": 5230
+    },
+    "validacao": {
+      "imagens": 1502,
+      "lesoes": 1122
+    },
+    "teste": {
+      "imagens": 1502,
+      "lesoes": 1118
+    }
+  },
+  "treino": {
+    "epocas_executadas": 14,
+    "melhor_epoca": 8,
+    "acuracia_balanceada_validacao": 0.7950392025748095,
+    "lote": 64,
+    "taxa_fase1": 0.001,
+    "taxa_fase2": 0.0002,
+    "pesos_classes": {
+      "akiec": 4.4514,
+      "bcc": 2.7069,
+      "bkl": 1.3213,
+      "df": 12.3651,
+      "mel": 1.2504,
+      "nv": 0.2137,
+      "vasc": 11.1286
+    }
+  },
+  "calibracao": {
+    "temperatura": 1.2302687168121338,
+    "nll_validacao_antes": 0.6618607640266418,
+    "ece_validacao_antes": 0.061787369461070024,
+    "nll_validacao_depois": 0.6459683775901794,
+    "ece_validacao_depois": 0.03565923373108111,
+    "nll_teste_antes": 0.700046718120575,
+    "ece_teste_antes": 0.06918570037729603,
+    "nll_teste_depois": 0.6801095604896545,
+    "ece_teste_depois": 0.027572561228338406
+  },
+  "teste": {
+    "acuracia": 0.7310252996005326,
+    "acuracia_balanceada": 0.7419940393537742,
+    "auc_macro": 0.9586018993888388,
+    "por_classe": {
+      "akiec": {
+        "classe": "Ceratose actínica / Doença de Bowen",
+        "imagens": 38.0,
+        "sensibilidade": 0.47368421052631576,
+        "especificidade": 0.9979508196721312,
+        "precisao": 0.8571428571428571,
+        "f1": 0.6101694915254238,
+        "auc": 0.9839840379637619
+      },
+      "bcc": {
+        "classe": "Carcinoma basocelular",
+        "imagens": 70.0,
+        "sensibilidade": 0.8285714285714286,
+        "especificidade": 0.9741620111731844,
+        "precisao": 0.6105263157894737,
+        "f1": 0.703030303030303,
+        "auc": 0.9834996009577015
+      },
+      "bkl": {
+        "classe": "Lesão queratósica benigna",
+        "imagens": 193.0,
+        "sensibilidade": 0.7979274611398963,
+        "especificidade": 0.9067990832696715,
+        "precisao": 0.5579710144927537,
+        "f1": 0.6567164179104478,
+        "auc": 0.9316489666992562
+      },
+      "df": {
+        "classe": "Dermatofibroma",
+        "imagens": 11.0,
+        "sensibilidade": 0.8181818181818182,
+        "especificidade": 0.9926224010731053,
+        "precisao": 0.45,
+        "f1": 0.5806451612903226,
+        "auc": 0.9902444972867508
+      },
+      "mel": {
+        "classe": "Melanoma",
+        "imagens": 155.0,
+        "sensibilidade": 0.6645161290322581,
+        "especificidade": 0.8596881959910914,
+        "precisao": 0.3527397260273973,
+        "f1": 0.4608501118568233,
+        "auc": 0.883166894173432
+      },
+      "nv": {
+        "classe": "Nevo melanocítico",
+        "imagens": 1009.0,
+        "sensibilidade": 0.7264618434093162,
+        "especificidade": 0.949290060851927,
+        "precisao": 0.9670184696569921,
+        "f1": 0.8296547821165817,
+        "auc": 0.9400145144008185
+      },
+      "vasc": {
+        "classe": "Lesão vascular",
+        "imagens": 26.0,
+        "sensibilidade": 0.8846153846153846,
+        "especificidade": 0.9884823848238482,
+        "precisao": 0.575,
+        "f1": 0.696969696969697,
+        "auc": 0.9976547842401501
+      }
+    },
+    "matriz_confusao": {
+      "ordem": [
+        "akiec",
+        "bcc",
+        "bkl",
+        "df",
+        "mel",
+        "nv",
+        "vasc"
+      ],
+      "valores": [
+        [
+          18,
+          8,
+          7,
+          1,
+          2,
+          2,
+          0
+        ],
+        [
+          0,
+          58,
+          7,
+          0,
+          2,
+          0,
+          3
+        ],
+        [
+          0,
+          8,
+          154,
+          2,
+          22,
+          5,
+          2
+        ],
+        [
+          0,
+          1,
+          0,
+          9,
+          0,
+          1,
+          0
+        ],
+        [
+          2,
+          3,
+          25,
+          3,
+          103,
+          17,
+          2
+        ],
+        [
+          1,
+          17,
+          81,
+          5,
+          162,
+          733,
+          10
+        ],
+        [
+          0,
+          0,
+          2,
+          0,
+          1,
+          0,
+          23
+        ]
+      ]
+    }
+  },
+  "versoes": {
+    "torch": "2.14.1+cu130",
+    "torchvision": "0.29.1+cu130"
+  }
+}

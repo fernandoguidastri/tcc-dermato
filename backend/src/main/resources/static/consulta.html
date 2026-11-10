@@ -195,6 +195,23 @@
       }
     }
 
+    async function analisarNovamente(botao) {
+      const msg = document.getElementById("msgReanalise");
+      botao.disabled = true;
+      botao.textContent = "Analisando...";
+      msg.textContent = "Se a IA estava parada, pode levar cerca de 1 minuto.";
+      msg.className = "msg";
+      try {
+        resultadoAtual = await reanalisarImagem(resultadoAtual.imagem.id);
+        exibirResultado(resultadoAtual);
+      } catch (e) {
+        msg.textContent = "Erro: " + e.message;
+        msg.className = "msg erro";
+        botao.disabled = false;
+        botao.textContent = "Analisar novamente";
+      }
+    }
+
     function exibirResultado(resultado) {
       document.getElementById("cardResultado").style.display = "block";
 
@@ -206,7 +223,24 @@
       div.innerHTML = "";
 
       let probs;
-      try { probs = JSON.parse(resultado.vetorProbabilidades); } catch (e) { probs = {}; }
+      try { probs = JSON.parse(resultado.vetorProbabilidades); } catch (e) { probs = { erro: "resultado ilegível" }; }
+
+      // A IA falhou (fora do ar, acordando no Render etc.): mostra o aviso e permite tentar de novo
+      if (probs.erro) {
+        const aviso = document.createElement("p");
+        aviso.className = "msg erro";
+        aviso.textContent = "A IA não conseguiu analisar esta imagem (" + probs.erro + "). A foto foi salva; tente analisar novamente.";
+        const botao = document.createElement("button");
+        botao.type = "button";
+        botao.className = "btn-outline";
+        botao.textContent = "Analisar novamente";
+        botao.onclick = () => analisarNovamente(botao);
+        const msgReanalise = document.createElement("div");
+        msgReanalise.id = "msgReanalise";
+        msgReanalise.className = "msg";
+        div.append(aviso, botao, msgReanalise);
+        return;
+      }
 
       Object.entries(probs).forEach(([categoria, valor]) => {
         const pct = Math.round(valor * 100);

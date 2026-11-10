@@ -10,6 +10,11 @@ uploads/
 ai-service/venv/
 ai-service/.venv/
 **/__pycache__/
+# Treino do modelo: dataset e resultados ficam fora do Git
+ml/dados/
+ml/saida/
+*.pt
+modelo_ham10000.zip
 # Configuracao local com senha - NUNCA subir para o GitHub
 # (o modelo application-local.properties.example sobe normalmente)
 backend/src/main/resources/application-local.properties

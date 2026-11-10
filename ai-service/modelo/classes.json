@@ -1,0 +1,55 @@
+{
+  "modelo": "modelo_ham10000.onnx",
+  "entrada": {
+    "nome": "entrada",
+    "formato": "NCHW float32",
+    "tamanho": 224,
+    "recorte": "quadrado central",
+    "redimensionamento": "bilinear",
+    "escala": "pixel / 255",
+    "media": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "desvio": [
+      0.229,
+      0.224,
+      0.225
+    ]
+  },
+  "saida": {
+    "nome": "probabilidades",
+    "temperatura_embutida": 1.2303
+  },
+  "classes": [
+    {
+      "codigo": "akiec",
+      "nome": "Ceratose actínica / Doença de Bowen"
+    },
+    {
+      "codigo": "bcc",
+      "nome": "Carcinoma basocelular"
+    },
+    {
+      "codigo": "bkl",
+      "nome": "Lesão queratósica benigna"
+    },
+    {
+      "codigo": "df",
+      "nome": "Dermatofibroma"
+    },
+    {
+      "codigo": "mel",
+      "nome": "Melanoma"
+    },
+    {
+      "codigo": "nv",
+      "nome": "Nevo melanocítico"
+    },
+    {
+      "codigo": "vasc",
+      "nome": "Lesão vascular"
+    }
+  ]
+}

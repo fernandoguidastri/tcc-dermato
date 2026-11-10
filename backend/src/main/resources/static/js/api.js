@@ -181,6 +181,13 @@ async function uploadImagem(consultaId, arquivo) {
   return resp.json();
 }
 
+// Pede uma nova analise da IA para uma imagem ja enviada (ex.: a IA estava fora do ar)
+async function reanalisarImagem(imagemId) {
+  const resp = await apiFetch(`/imagens/analisar/${imagemId}`, { method: "POST" });
+  if (!resp.ok) throw new Error(await extrairMensagemErro(resp));
+  return resp.json();
+}
+
 // ----- Validacao (human-in-the-loop) -----
 async function validarResultado(resultadoId, diagnosticoValidado) {
   const resp = await apiFetch(`/resultados/${resultadoId}/validar`, {

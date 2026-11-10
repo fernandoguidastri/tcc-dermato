@@ -29,7 +29,7 @@ atendeu.
 - **Back-end:** Java 17, Spring Boot 3.2 (Web, Data JPA, Security, Validation), JWT, Swagger (springdoc).
 - **Banco de dados:** MySQL 8.
 - **Front-end:** HTML, CSS e JavaScript, sem frameworks, servido pelo próprio Spring Boot.
-- **IA:** Python com FastAPI. Por enquanto é um simulador; o modelo real está em desenvolvimento.
+- **IA:** Python com FastAPI e ONNX Runtime. Modelo EfficientNet-B0 treinado com a base HAM10000 no Google Colab (PyTorch).
 
 ## Estrutura
 
@@ -37,6 +37,7 @@ atendeu.
 tcc-dermato/
 ├── backend/        API Spring Boot e páginas do front-end (src/main/resources/static)
 ├── ai-service/     microsserviço de IA (FastAPI)
+├── ml/             notebook do Google Colab que treina o modelo (HAM10000)
 ├── seed.sql        dados fictícios para demonstração
 ├── seed-images/    imagens usadas pelo seed
 ├── Dockerfile      imagem do back-end para o deploy
@@ -69,8 +70,9 @@ uvicorn main:app --reload --port 8000
 No Windows, use o **cmd**, porque o PowerShell costuma bloquear o script de
 ativação do venv. O serviço fica em `http://localhost:8000`.
 
-O simulador atual devolve probabilidades fixas para cada imagem (calculadas a
-partir do conteúdo do arquivo), apenas para testar o fluxo completo.
+O serviço carrega o modelo de `ai-service/modelo/` e responde em
+`POST /predict` (campo `arquivo`) com a probabilidade de cada uma das 7
+classes, da maior para a menor.
 
 ### 3. Back-end
 
@@ -95,7 +97,42 @@ deles com consultas, imagens e resultados da IA (validados e pendentes).
 3. No MySQL Workbench, selecione o banco `dermato_db` e execute o `seed.sql` inteiro.
 4. Entre com `demo@dermato.com` / `Senha123!`.
 
-As imagens do seed são ilustrações genéricas, não fotos médicas reais.
+As imagens do seed são ilustrações genéricas, não fotos médicas reais, e os
+resultados da IA gravados pelo seed são exemplos fixos.
+
+## Modelo de IA
+
+O modelo foi treinado com a base HAM10000 (Tschandl, Rosendahl e Kittler,
+2018), com cerca de 10 mil imagens dermatoscópicas de 7 classes. O treino está
+no notebook [`ml/treino_ham10000.ipynb`](ml/treino_ham10000.ipynb), feito para
+rodar no Google Colab:
+
+- EfficientNet-B0 pré-treinada no ImageNet, com ajuste fino em duas fases;
+- divisão em treino, validação e teste (70/15/15) por lesão, para que fotos da
+  mesma lesão não fiquem em conjuntos diferentes;
+- perda ponderada por classe, porque cerca de 2/3 das imagens são nevos;
+- calibração das probabilidades por *temperature scaling*;
+- exportação para ONNX, servido no microsserviço com ONNX Runtime.
+
+Resultado no conjunto de teste (1502 imagens que o modelo não viu no treino):
+acurácia de 73,1%, acurácia balanceada de 74,2% e AUC média de 0,959.
+
+| Classe | Imagens | Sensibilidade | Especificidade | AUC |
+|---|---|---|---|---|
+| Melanoma | 155 | 66,5% | 86,0% | 0,883 |
+| Carcinoma basocelular | 70 | 82,9% | 97,4% | 0,983 |
+| Ceratose actínica / Doença de Bowen | 38 | 47,4% | 99,8% | 0,984 |
+| Lesão queratósica benigna | 193 | 79,8% | 90,7% | 0,932 |
+| Dermatofibroma | 11 | 81,8% | 99,3% | 0,990 |
+| Nevo melanocítico | 1009 | 72,6% | 94,9% | 0,940 |
+| Lesão vascular | 26 | 88,5% | 98,8% | 0,998 |
+
+As métricas completas e as figuras (matriz de confusão, curvas de treino e
+calibração) estão em [`ml/resultados/`](ml/resultados/).
+
+Limitações: a base tem imagens de dermatoscópio, e o sistema recebe fotos de
+celular, então o desempenho com fotos comuns tende a ser menor. O modelo
+sempre escolhe uma das 7 classes, mesmo que a foto não seja de uma lesão.
 
 ## Uso no celular
 
@@ -155,8 +192,6 @@ no formato `{"erro": "mensagem"}`.
 
 ## Próximos passos
 
-- Substituir o simulador por um modelo treinado com a base HAM10000
-  (Tschandl et al., 2018), servido com ONNX Runtime.
 - Testes automatizados (JUnit no back-end e pytest na IA) e avaliação de
   usabilidade com o questionário SUS.
 - Testes no celular pelo ambiente publicado no Render.
