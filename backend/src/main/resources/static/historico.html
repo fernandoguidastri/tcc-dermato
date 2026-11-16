@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#132A3B">
-  <title>Histórico - Plataforma Dermatologica</title>
+  <title>Histórico - Plataforma Dermatológica</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23132A3B'/%3E%3Ccircle cx='10.5' cy='10.5' r='5.5' fill='none' stroke='%23fff' stroke-width='1.8'/%3E%3Ccircle cx='10.5' cy='10.5' r='1.8' fill='%23fff'/%3E%3Cline x1='14.6' y1='14.6' x2='19' y2='19' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -36,9 +37,17 @@
     <main class="content">
       <div class="page-header">
         <h1>Histórico — <span id="nomePaciente"></span></h1>
-        <p><a class="link-simple" href="#" id="linkNovaConsulta">+ Registrar nova consulta para este paciente</a></p>
+        <p>Consultas, imagens, probabilidades calculadas pela IA e diagnósticos validados pelo médico.</p>
       </div>
 
+      <div class="card">
+        <div class="ficha-paciente" id="fichaPaciente"><p class="info-foto">Carregando prontuário...</p></div>
+        <div class="ficha-acoes">
+          <a class="btn-link" href="#" id="linkNovaConsulta">+ Registrar nova consulta</a>
+        </div>
+      </div>
+
+      <div id="msgErro" class="msg erro"></div>
       <div id="listaConsultas"></div>
 
       <div class="card" id="cardVazio" style="display:none;">
@@ -53,88 +62,140 @@
 
     const params = new URLSearchParams(window.location.search);
     const pacienteId = params.get("pacienteId");
-    const nomePaciente = params.get("nome") || "";
-    document.getElementById("nomePaciente").textContent = nomePaciente;
+    const nomeNaUrl = params.get("nome") || "";
+    document.getElementById("nomePaciente").textContent = nomeNaUrl;
     document.getElementById("linkNovaConsulta").href =
-      `consulta.html?pacienteId=${pacienteId}&nome=${encodeURIComponent(nomePaciente)}`;
+      `consulta.html?pacienteId=${pacienteId}&nome=${encodeURIComponent(nomeNaUrl)}`;
 
-    function formatarData(iso) {
-      if (!iso) return "-";
-      return new Date(iso).toLocaleString("pt-BR");
+    // Clique em qualquer foto do historico abre a versao ampliada
+    document.getElementById("listaConsultas").addEventListener("click", (e) => {
+      const img = e.target.closest("img.foto-ampliavel");
+      if (img) ampliarImagem(img.src, img.dataset.legenda);
+    });
+
+    function itemFicha(rotulo, valor) {
+      return `<div class="ficha-item">
+                <div class="ficha-rotulo">${rotulo}</div>
+                <div class="ficha-valor">${escaparHtml(valor || "-")}</div>
+              </div>`;
     }
 
-    function renderProbabilidades(vetorJson) {
-      let probs;
-      try { probs = JSON.parse(vetorJson); } catch (e) { return "<p class='msg erro'>Resultado da IA indisponível.</p>"; }
-      if (probs.erro) return `<p class="msg erro">${probs.erro}</p>`;
+    function renderizarFicha(paciente, consultas) {
+      const idade = calcularIdade(paciente.dataNascimento);
+      const nascimento = paciente.dataNascimento
+        ? `${formatarData(paciente.dataNascimento)} (${idade} ${idade === 1 ? "ano" : "anos"})`
+        : "-";
+      const ultima = consultas.length ? formatarDataHora(consultas[0].consulta.dataConsulta) : "Nenhuma";
+      document.getElementById("fichaPaciente").innerHTML =
+        itemFicha("CPF", paciente.cpf) +
+        itemFicha("Nascimento", nascimento) +
+        itemFicha("Telefone", paciente.telefone) +
+        itemFicha("E-mail", paciente.email) +
+        itemFicha("Consultas", String(consultas.length)) +
+        itemFicha("Última consulta", ultima);
+    }
 
-      return Object.entries(probs).map(([categoria, valor]) => {
-        const pct = Math.round(valor * 100);
-        return `<div class="prob-row">
-                  <div>${categoria} — ${pct}%</div>
-                  <div class="prob-bar-bg"><div class="prob-bar" style="width:${pct}%"></div></div>
+    // Quadro do topo de cada imagem: diagnostico validado (destaque) ou pendente
+    function htmlDiagnostico(resultado) {
+      if (resultado && resultado.validado) {
+        return `<div class="diag-box ok">
+                  <div class="diag-rotulo">Diagnóstico validado pelo médico</div>
+                  <div class="diag-valor">${escaparHtml(resultado.diagnosticoValidado || "-")}</div>
+                  ${resultado.dataValidacao ? `<div class="diag-data">em ${formatarDataHora(resultado.dataValidacao)}</div>` : ""}
                 </div>`;
-      }).join("");
+      }
+      return `<div class="diag-box">
+                <div class="diag-rotulo">Aguardando validação</div>
+                <div class="diag-data">${resultado ? "O médico ainda não confirmou o diagnóstico desta imagem." : "Ainda sem resultado da IA."}</div>
+              </div>`;
+    }
+
+    function htmlImagem(img, dataConsulta) {
+      const caminho = img.imagem.caminhoArquivo.replace(/\\/g, "/");
+      const urlImagem = "/" + caminho.substring(caminho.indexOf("uploads/"));
+      const resultado = img.resultado;
+
+      let blocoIA = "";
+      if (resultado) {
+        const probs = lerProbabilidades(resultado.vetorProbabilidades);
+        blocoIA = probs.erro
+          ? `<p class="msg erro">Resultado da IA indisponível (${escaparHtml(probs.erro)}).</p>`
+          : `<p class="subtitulo-ia">Probabilidades calculadas pela IA (apoio à decisão)</p>${htmlProbabilidades(probs.entradas, 3)}`;
+      }
+
+      return `
+        <div class="hist-item">
+          <div class="hist-foto">
+            <img src="${escaparHtml(urlImagem)}" class="foto-ampliavel" alt="Imagem da lesão"
+                 data-legenda="Consulta em ${escaparHtml(dataConsulta)}">
+            <small>Clique para ampliar</small>
+          </div>
+          <div class="hist-resultado">${htmlDiagnostico(resultado)}${blocoIA}</div>
+        </div>`;
+    }
+
+    // Selo no canto do cartao: resume a situacao das imagens da consulta
+    function seloConsulta(imagens) {
+      if (!imagens || imagens.length === 0) return "";
+      const pendentes = imagens.filter(i => !i.resultado || !i.resultado.validado).length;
+      return pendentes === 0
+        ? `<span class="badge ok">Validada</span>`
+        : `<span class="badge">${pendentes === 1 ? "1 imagem pendente" : pendentes + " imagens pendentes"}</span>`;
     }
 
     async function carregarHistorico() {
-      const consultas = await listarConsultasDetalhado(pacienteId);
+      let prontuario;
+      try {
+        prontuario = await buscarProntuario(pacienteId);
+      } catch (e) {
+        document.getElementById("fichaPaciente").innerHTML = "";
+        document.getElementById("msgErro").textContent = "Não foi possível carregar o histórico: " + e.message;
+        return;
+      }
 
-      if (!consultas || consultas.length === 0) {
+      const paciente = prontuario.paciente;
+      const consultas = prontuario.consultas || [];
+      consultas.sort((a, b) => new Date(b.consulta.dataConsulta) - new Date(a.consulta.dataConsulta));
+
+      // Usa o nome do banco (o da URL pode estar desatualizado)
+      document.getElementById("nomePaciente").textContent = paciente.nome;
+      document.getElementById("linkNovaConsulta").href =
+        `consulta.html?pacienteId=${paciente.id}&nome=${encodeURIComponent(paciente.nome)}`;
+      renderizarFicha(paciente, consultas);
+
+      if (consultas.length === 0) {
         document.getElementById("cardVazio").style.display = "block";
         return;
       }
 
       const container = document.getElementById("listaConsultas");
-      container.innerHTML = "";
-      consultas.sort((a, b) => new Date(b.consulta.dataConsulta) - new Date(a.consulta.dataConsulta));
-
-      consultas.forEach(item => {
+      container.innerHTML = consultas.map(item => {
         const consulta = item.consulta;
-        const card = document.createElement("div");
-        card.className = "card";
-
-        let imagensHtml = "";
-        if (!item.imagens || item.imagens.length === 0) {
-          imagensHtml = "<p style='color:var(--ink-soft); font-size:0.85rem; margin-top:12px;'>Nenhuma imagem enviada nesta consulta.</p>";
-        } else {
-          imagensHtml = item.imagens.map(img => {
-            const caminho = img.imagem.caminhoArquivo.replace(/\\/g, "/");
-            const urlImagem = "/" + caminho.substring(caminho.indexOf("uploads/"));
-            const resultado = img.resultado;
-
-            let blocoResultado;
-            if (!resultado) {
-              blocoResultado = "<p class='msg erro'>Ainda sem resultado da IA.</p>";
-            } else {
-              const badge = resultado.validado
-                ? `<span class="badge ok">Validado: ${resultado.diagnosticoValidado || ""}</span>`
-                : `<span class="badge">Aguardando validação do médico</span>`;
-              blocoResultado = renderProbabilidades(resultado.vetorProbabilidades) + `<div style="margin-top:8px;">${badge}</div>`;
-            }
-
-            return `
-              <div class="hist-item">
-                <img src="${urlImagem}" alt="Imagem da lesão">
-                <div class="hist-resultado">${blocoResultado}</div>
-              </div>`;
-          }).join("");
-        }
+        const data = formatarDataHora(consulta.dataConsulta);
 
         // Rastreabilidade (modelo de clinica): mostra qual medico realizou a consulta
         const medico = consulta.medico;
         const atendidoPor = medico
-          ? `<div style="margin-top:4px; font-size:0.88rem; color:var(--ink-soft);">Atendido por: <strong>${medico.nome}</strong> (${medico.crm})</div>`
+          ? `<div class="consulta-medico">Atendido por: <strong>${escaparHtml(medico.nome)}</strong> (${escaparHtml(medico.crm)})</div>`
           : "";
 
-        card.innerHTML = `
-          <h2>Consulta em ${formatarData(consulta.dataConsulta)}</h2>
-          ${atendidoPor}
-          <p style="margin-top:6px;">${consulta.observacoes || "<em>Sem observações registradas.</em>"}</p>
-          ${imagensHtml}
-        `;
-        container.appendChild(card);
-      });
+        const imagensHtml = (!item.imagens || item.imagens.length === 0)
+          ? "<p style='color:var(--ink-soft); font-size:0.85rem; margin-top:12px;'>Nenhuma imagem enviada nesta consulta.</p>"
+          : item.imagens.map(img => htmlImagem(img, data)).join("");
+
+        return `
+          <div class="card">
+            <div class="consulta-topo">
+              <div>
+                <h2>Consulta em ${data}</h2>
+                ${atendidoPor}
+              </div>
+              ${seloConsulta(item.imagens)}
+            </div>
+            <p class="consulta-obs">${consulta.observacoes ? escaparHtml(consulta.observacoes) : "<em>Sem observações registradas.</em>"}</p>
+            ${imagensHtml}
+          </div>`;
+      }).join("");
     }
 
     carregarHistorico();

@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#132A3B">
-  <title>Consulta - Plataforma Dermatologica</title>
+  <title>Consulta - Plataforma Dermatológica</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23132A3B'/%3E%3Ccircle cx='10.5' cy='10.5' r='5.5' fill='none' stroke='%23fff' stroke-width='1.8'/%3E%3Ccircle cx='10.5' cy='10.5' r='1.8' fill='%23fff'/%3E%3Cline x1='14.6' y1='14.6' x2='19' y2='19' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -43,7 +44,7 @@
         <h2>1. Dados da consulta</h2>
         <label>Observações</label>
         <textarea id="observacoes" rows="3" placeholder="Ex: lesão pigmentada no antebraço esquerdo"></textarea>
-        <button class="primary" onclick="iniciarConsulta()">Registrar consulta</button>
+        <button class="primary" id="btnRegistrar" onclick="iniciarConsulta()">Registrar consulta</button>
         <div id="msgConsulta" class="msg"></div>
       </div>
 
@@ -76,14 +77,26 @@
       <div class="card" id="cardResultado" style="display:none;">
         <h2>3. Resultado da IA e validação médica</h2>
         <p>Estes percentuais são apenas suporte à decisão. O diagnóstico final deve ser validado pelo médico.</p>
-        <img id="imagemEnviada" style="width:150px; height:150px; object-fit:cover; border-radius:6px; border:1px solid var(--border); margin-bottom:16px;">
-        <div id="probabilidades"></div>
+        <div class="resultado-layout">
+          <div class="hist-foto">
+            <img id="imagemEnviada" class="foto-ampliavel" alt="Imagem da lesão enviada" style="width:150px; height:150px; object-fit:cover; border-radius:6px; border:1px solid var(--border);">
+            <small>Clique para ampliar</small>
+          </div>
+          <div id="probabilidades" class="resultado-probs"></div>
+        </div>
 
-        <label style="margin-top:20px;">Diagnóstico final validado pelo médico</label>
-        <input type="text" id="diagnosticoFinal" placeholder="Ex: Nevo benigno - sem indicação de biópsia">
-        <button class="primary" onclick="validar()">Confirmar e salvar no prontuário</button>
+        <form id="formValidacao" onsubmit="validar(event)" novalidate>
+          <label for="diagnosticoFinal" style="margin-top:20px;">Diagnóstico final validado pelo médico</label>
+          <input type="text" id="diagnosticoFinal" placeholder="Ex: Nevo benigno - sem indicação de biópsia" autocomplete="off">
+          <div class="chips" id="sugestoes"></div>
+          <button type="submit" class="primary" id="btnValidar">Confirmar e salvar no prontuário</button>
+        </form>
         <div id="msgValidacao" class="msg"></div>
-        <span id="badgeValidado"></span>
+        <div id="posValidacao" class="acoes-pos-validacao" style="display:none;">
+          <span class="badge ok">Validado pelo médico</span>
+          <a class="link-simple" id="linkHistorico" href="#">Ver histórico do paciente</a>
+          <a class="link-simple" href="pacientes.html">Voltar para pacientes</a>
+        </div>
       </div>
     </main>
   </div>
@@ -94,19 +107,28 @@
 
     const params = new URLSearchParams(window.location.search);
     const pacienteId = params.get("pacienteId");
-    document.getElementById("nomePaciente").textContent = params.get("nome") || "";
+    const nomePaciente = params.get("nome") || "";
+    document.getElementById("nomePaciente").textContent = nomePaciente;
+    document.getElementById("linkHistorico").href =
+      `historico.html?pacienteId=${pacienteId}&nome=${encodeURIComponent(nomePaciente)}`;
 
     let consultaAtual = null;
     let resultadoAtual = null;
 
     async function iniciarConsulta() {
-      const observacoes = document.getElementById("observacoes").value;
+      const observacoes = document.getElementById("observacoes");
+      const botao = document.getElementById("btnRegistrar");
       const msg = document.getElementById("msgConsulta");
       try {
-        consultaAtual = await criarConsulta(pacienteId, observacoes);
+        consultaAtual = await comCarregamento(botao, "Registrando...", () => criarConsulta(pacienteId, observacoes.value));
         msg.textContent = "Consulta registrada (id " + consultaAtual.id + "). Agora envie a imagem da lesão.";
         msg.className = "msg sucesso";
+        // A consulta ja existe: trava a etapa 1 para nao registrar outra por engano
+        botao.disabled = true;
+        botao.textContent = "Consulta registrada";
+        observacoes.readOnly = true;
         document.getElementById("cardUpload").style.display = "block";
+        document.getElementById("cardUpload").scrollIntoView({ behavior: "smooth", block: "start" });
       } catch (e) {
         msg.textContent = "Erro: " + e.message;
         msg.className = "msg erro";
@@ -176,12 +198,10 @@
       const btn = document.getElementById("btnEnviar");
       if (!arquivoPronto) { msg.textContent = "Tire uma foto ou escolha uma imagem primeiro."; msg.className = "msg erro"; return; }
 
-      btn.disabled = true;
-      btn.textContent = "Analisando...";
       msg.textContent = "Enviando e analisando a imagem. Na primeira análise após um tempo parado, pode levar cerca de 1 minuto.";
       msg.className = "msg";
       try {
-        resultadoAtual = await uploadImagem(consultaAtual.id, arquivoPronto);
+        resultadoAtual = await comCarregamento(btn, "Analisando...", () => uploadImagem(consultaAtual.id, arquivoPronto));
         msg.textContent = "Imagem enviada e analisada pela IA.";
         msg.className = "msg sucesso";
         exibirResultado(resultadoAtual);
@@ -189,9 +209,6 @@
       } catch (e) {
         msg.textContent = "Erro: " + e.message;
         msg.className = "msg erro";
-      } finally {
-        btn.disabled = false;
-        btn.textContent = "Enviar para análise da IA";
       }
     }
 
@@ -212,20 +229,54 @@
       }
     }
 
+    // Volta a etapa 3 ao estado inicial (ex.: enviou outra foto na mesma consulta)
+    function prepararValidacao(visivel) {
+      document.getElementById("formValidacao").style.display = visivel ? "block" : "none";
+      document.getElementById("posValidacao").style.display = "none";
+      document.getElementById("msgValidacao").textContent = "";
+      const campo = document.getElementById("diagnosticoFinal");
+      campo.value = "";
+      campo.readOnly = false;
+      document.getElementById("sugestoes").style.display = "flex";
+      const botao = document.getElementById("btnValidar");
+      botao.disabled = false;
+      botao.textContent = "Confirmar e salvar no prontuário";
+    }
+
+    // Atalhos com as classes mais provaveis: so preenchem o campo, o medico ainda revisa e confirma
+    function mostrarSugestoes(entradas) {
+      const div = document.getElementById("sugestoes");
+      div.innerHTML = '<span class="chips-rotulo">Atalhos:</span>';
+      entradas.slice(0, 3).forEach(([categoria]) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "chip";
+        chip.textContent = categoria;
+        chip.onclick = () => {
+          const campo = document.getElementById("diagnosticoFinal");
+          if (campo.readOnly) return;
+          campo.value = categoria;
+          campo.focus();
+        };
+        div.appendChild(chip);
+      });
+    }
+
     function exibirResultado(resultado) {
       document.getElementById("cardResultado").style.display = "block";
 
       const imagemEl = document.getElementById("imagemEnviada");
       const caminho = resultado.imagem.caminhoArquivo.replace(/\\/g, "/");
       imagemEl.src = "/" + caminho.substring(caminho.indexOf("uploads/"));
+      imagemEl.onclick = () => ampliarImagem(imagemEl.src, "Imagem enviada nesta consulta");
 
       const div = document.getElementById("probabilidades");
       div.innerHTML = "";
 
-      let probs;
-      try { probs = JSON.parse(resultado.vetorProbabilidades); } catch (e) { probs = { erro: "resultado ilegível" }; }
+      const probs = lerProbabilidades(resultado.vetorProbabilidades);
 
       // A IA falhou (fora do ar, acordando no Render etc.): mostra o aviso e permite tentar de novo
+      prepararValidacao(!probs.erro);
       if (probs.erro) {
         const aviso = document.createElement("p");
         aviso.className = "msg erro";
@@ -242,25 +293,32 @@
         return;
       }
 
-      Object.entries(probs).forEach(([categoria, valor]) => {
-        const pct = Math.round(valor * 100);
-        const row = document.createElement("div");
-        row.className = "prob-row";
-        row.innerHTML = `
-          <div>${categoria} — ${pct}%</div>
-          <div class="prob-bar-bg"><div class="prob-bar" style="width:${pct}%"></div></div>`;
-        div.appendChild(row);
-      });
+      div.innerHTML = htmlProbabilidades(probs.entradas);
+      mostrarSugestoes(probs.entradas);
     }
 
-    async function validar() {
-      const diagnostico = document.getElementById("diagnosticoFinal").value;
+    async function validar(evento) {
+      evento.preventDefault();
+      const campo = document.getElementById("diagnosticoFinal");
+      const botao = document.getElementById("btnValidar");
       const msg = document.getElementById("msgValidacao");
+      const diagnostico = campo.value.trim();
+      if (!diagnostico) {
+        msg.textContent = "Informe o diagnóstico final antes de confirmar.";
+        msg.className = "msg erro";
+        campo.focus();
+        return;
+      }
       try {
-        await validarResultado(resultadoAtual.id, diagnostico);
+        await comCarregamento(botao, "Salvando...", () => validarResultado(resultadoAtual.id, diagnostico));
         msg.textContent = "Diagnóstico validado e salvo no prontuário do paciente.";
         msg.className = "msg sucesso";
-        document.getElementById("badgeValidado").innerHTML = '<span class="badge ok">Validado pelo médico</span>';
+        // Validado: trava o campo e mostra os proximos passos
+        campo.readOnly = true;
+        botao.disabled = true;
+        botao.textContent = "Diagnóstico salvo";
+        document.getElementById("sugestoes").style.display = "none";
+        document.getElementById("posValidacao").style.display = "flex";
       } catch (e) {
         msg.textContent = "Erro: " + e.message;
         msg.className = "msg erro";

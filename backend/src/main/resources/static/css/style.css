@@ -284,8 +284,47 @@ tr:last-child td { border-bottom: none; }
 
 /* ===================== Barra de probabilidade ===================== */
 .prob-bar-bg { background: var(--paper); border-radius: 4px; height: 8px; margin-top: 5px; overflow: hidden; }
-.prob-bar { background: var(--accent); height: 8px; }
+.prob-bar { background: var(--accent); height: 8px; border-radius: 4px; }
 .prob-row { margin-bottom: 12px; font-size: 0.88rem; }
+.prob-linha { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.prob-pct { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+
+/* Resultado da IA: a classe mais provavel em destaque, as demais mais discretas */
+.prob-lista .prob-row { color: var(--ink-soft); }
+.prob-lista .prob-row .prob-bar { background: #A9BDB6; }
+.prob-lista .prob-top {
+  color: var(--ink);
+  background: var(--accent-soft);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+}
+.prob-lista .prob-row:not(.prob-top) { padding: 0 12px; }
+.prob-mais summary { padding: 0 12px; }
+.prob-lista .prob-top .prob-nome { font-weight: 600; }
+.prob-lista .prob-top .prob-pct { font-size: 1.05rem; color: var(--accent-dark); }
+.prob-lista .prob-top .prob-bar { background: var(--accent); }
+.prob-lista .prob-top .prob-bar-bg { background: var(--surface); }
+.prob-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 20px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  vertical-align: 2px;
+}
+.prob-mais summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.84rem;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+.prob-mais[open] summary { margin-bottom: 12px; }
 
 /* ===================== Badges ===================== */
 .badge {
@@ -401,6 +440,7 @@ tr:last-child td { border-bottom: none; }
 
 .info-foto { font-size: 0.8rem; color: var(--ink-soft); margin-top: 8px; }
 button:disabled { opacity: 0.6; cursor: not-allowed; }
+button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 /* Item do historico (imagem + resultado) */
 .hist-item {
@@ -420,6 +460,175 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   flex-shrink: 0;
 }
 .hist-item .hist-resultado { flex: 1; min-width: 200px; }
+
+/* Etapa 3 da consulta: foto ao lado das probabilidades */
+.resultado-layout { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; margin-top: 4px; }
+.resultado-probs { flex: 1; min-width: 220px; }
+
+/* Foto que pode ser ampliada */
+.foto-ampliavel { cursor: zoom-in; transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.foto-ampliavel:hover { transform: scale(1.03); box-shadow: 0 4px 14px rgba(19, 42, 59, 0.18); }
+.hist-foto { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.hist-foto small { font-size: 0.72rem; color: var(--ink-faint); }
+
+/* Cabecalho de cada consulta no historico */
+.consulta-topo { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+.consulta-medico { margin-top: 4px; font-size: 0.86rem; color: var(--ink-soft); }
+.card > p.consulta-obs { margin: 10px 0 0; font-size: 0.92rem; color: var(--ink); }
+.card > p.consulta-obs em { color: var(--ink-faint); }
+
+/* Diagnostico validado pelo medico (destaque) x pendente */
+.diag-box {
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 14px;
+  border-left: 3px solid var(--gold);
+  background: var(--gold-soft);
+}
+.diag-box .diag-rotulo { font-size: 0.74rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--gold); }
+.diag-box .diag-valor { font-weight: 600; margin-top: 2px; }
+.diag-box .diag-data { font-size: 0.78rem; color: var(--ink-soft); margin-top: 2px; }
+.diag-box.ok { border-left-color: var(--success); background: var(--success-soft); }
+.diag-box.ok .diag-rotulo { color: var(--success); }
+.subtitulo-ia { font-size: 0.78rem; color: var(--ink-soft); font-weight: 600; margin: 0 0 10px; }
+
+/* Ficha do paciente (topo do historico) */
+.ficha-paciente { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px 20px; }
+.ficha-item .ficha-rotulo { font-size: 0.74rem; color: var(--ink-faint); font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+.ficha-item .ficha-valor { margin-top: 2px; font-size: 0.92rem; overflow-wrap: anywhere; }
+.ficha-acoes { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--border); }
+a.btn-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--accent); color: #fff; text-decoration: none;
+  padding: 9px 16px; border-radius: var(--radius); font-weight: 600; font-size: 0.9rem;
+}
+a.btn-link:hover { background: var(--accent-dark); }
+
+/* Atalhos (chips) para preencher o diagnostico validado */
+.chips { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 8px; }
+.chips-rotulo { font-size: 0.78rem; color: var(--ink-faint); margin-right: 2px; }
+.chip {
+  border: 1px solid var(--border);
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 0.8rem;
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--accent); color: var(--accent-dark); background: var(--accent-soft); }
+.acoes-pos-validacao { margin-top: 14px; display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; }
+
+/* ===================== Usuario logado (rodape da barra lateral) ===================== */
+.usuario-logado { display: flex; align-items: center; gap: 10px; padding: 0 4px 12px; min-width: 0; }
+.avatar {
+  width: 32px; height: 32px; flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.78rem; font-weight: 600; letter-spacing: 0.02em;
+}
+.usuario-dados { display: flex; flex-direction: column; min-width: 0; }
+.usuario-nome { color: #fff; font-size: 0.84rem; font-weight: 500; line-height: 1.25; }
+.usuario-email { color: var(--sidebar-ink-dim); font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.page-header .saudacao { color: var(--accent); font-weight: 600; font-size: 0.85rem; margin: 0 0 4px; }
+
+/* ===================== Botoes: carregando e perigo ===================== */
+button.carregando::before {
+  content: "";
+  display: inline-block;
+  width: 13px; height: 13px;
+  margin-right: 8px;
+  vertical-align: -2px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: girar 0.7s linear infinite;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+button.primary.perigo { background: var(--danger); }
+button.primary.perigo:hover { background: #8A372F; }
+
+/* ===================== Campo de senha com "Mostrar" ===================== */
+.campo-senha { position: relative; }
+.campo-senha input { padding-right: 78px; }
+.btn-ver-senha {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  margin-top: 2.5px;
+  background: transparent; border: none; cursor: pointer;
+  color: var(--accent); font-size: 0.8rem; font-weight: 600; font-family: var(--font-body);
+  padding: 6px 8px; border-radius: 4px;
+}
+.btn-ver-senha:hover { background: var(--accent-soft); }
+
+/* ===================== Janelas (confirmacao e foto ampliada) ===================== */
+dialog.modal {
+  border: none;
+  border-radius: 10px;
+  padding: 24px;
+  width: min(420px, calc(100vw - 32px));
+  box-shadow: 0 18px 50px rgba(19, 42, 59, 0.3);
+  color: var(--ink);
+}
+dialog.modal h2 { font-size: 1.1rem; }
+dialog.modal p { color: var(--ink-soft); font-size: 0.9rem; margin: 8px 0 0; }
+dialog::backdrop { background: rgba(19, 42, 59, 0.55); }
+.modal-acoes { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+.modal-acoes button { margin: 0; }
+
+dialog.modal-imagem {
+  border: none; background: transparent; padding: 0;
+  max-width: 94vw; max-height: 94vh; overflow: visible;
+  text-align: center; cursor: zoom-out;
+}
+dialog.modal-imagem img {
+  display: block;
+  max-width: 94vw; max-height: 84vh;
+  border-radius: 8px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.4);
+}
+dialog.modal-imagem p { color: #fff; font-size: 0.88rem; margin: 10px 0 0; }
+dialog.modal-imagem::backdrop { background: rgba(10, 20, 28, 0.85); }
+.modal-fechar {
+  position: fixed; top: 14px; right: 16px;
+  width: 40px; height: 40px; border-radius: 50%;
+  border: none; background: rgba(255, 255, 255, 0.15); color: #fff;
+  font-size: 1.6rem; line-height: 1; cursor: pointer;
+}
+
+/* ===================== Login/cadastro com painel de apresentacao ===================== */
+.auth-split { display: flex; min-height: 100vh; padding: 0; align-items: stretch; }
+.auth-painel {
+  flex: 0 0 44%;
+  max-width: 560px;
+  background: var(--sidebar-bg);
+  color: var(--sidebar-ink);
+  padding: 48px 52px;
+  display: flex;
+  flex-direction: column;
+}
+.auth-painel-marca { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 1.1rem; color: #fff; }
+.auth-painel-corpo { margin: auto 0; padding: 40px 0; }
+.auth-painel h1 { color: #fff; font-size: 2rem; line-height: 1.15; max-width: 16ch; }
+.auth-painel-corpo > p { color: var(--sidebar-ink); font-size: 0.95rem; max-width: 42ch; margin: 16px 0 0; }
+.auth-passos { list-style: none; padding: 0; margin: 28px 0 0; display: flex; flex-direction: column; gap: 12px; }
+.auth-passos li { display: flex; align-items: center; gap: 12px; font-size: 0.9rem; }
+.auth-passos li span {
+  width: 26px; height: 26px; flex-shrink: 0; border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.78rem; font-weight: 600; color: #fff;
+}
+.auth-aviso {
+  font-size: 0.8rem; color: var(--sidebar-ink-dim);
+  border-left: 2px solid var(--gold); padding-left: 12px; margin: 0;
+  max-width: 48ch;
+}
+.auth-rodape { font-size: 0.75rem; color: var(--sidebar-ink-dim); margin: 14px 0 0; opacity: 0.8; }
+.auth-form-lado { flex: 1; display: flex; align-items: center; justify-content: center; padding: 32px 24px; }
 
 /* ===================== Responsivo (celular / tablet) ===================== */
 @media (max-width: 720px) {
@@ -442,8 +651,24 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   .sidebar .brand-text { display: none; }
   .sidebar nav { flex-direction: row; gap: 2px; }
   .sidebar nav a { padding: 10px 10px; font-size: 0.85rem; }
-  .sidebar-footer { border-top: none; padding-top: 0; margin-left: auto; }
+  .sidebar-footer { border-top: none; padding-top: 0; margin-left: auto; display: flex; align-items: center; gap: 8px; }
   .sidebar-footer button { width: auto; padding: 10px 12px; }
+  .usuario-logado { padding: 0; }
+  .usuario-dados { display: none; }  /* no celular fica so o circulo com as iniciais */
+  .avatar { width: 30px; height: 30px; font-size: 0.72rem; }
+
+  /* Login/cadastro: o painel vira um cabecalho compacto acima do formulario */
+  .auth-split { flex-direction: column; padding: 0; }
+  .auth-painel { flex: none; max-width: none; padding: 18px 18px 20px; }
+  .auth-painel-corpo { margin: 0; padding: 14px 0 0; }
+  .auth-painel h1 { font-size: 1.3rem; max-width: none; }
+  .auth-painel-corpo > p, .auth-passos, .auth-rodape { display: none; }
+  .auth-aviso { margin-top: 12px; font-size: 0.76rem; }
+  .auth-form-lado { padding: 20px 16px 32px; align-items: flex-start; }
+
+  .ficha-paciente { grid-template-columns: repeat(2, 1fr); }
+  a.btn-link { width: 100%; justify-content: center; padding: 12px 16px; }
+  .modal-acoes button.primary, .modal-acoes button.secondary { padding: 12px 10px; }
 
   .content { margin-left: 0; padding: 20px 14px 40px; max-width: 100%; }
   .page-header h1 { font-size: 1.35rem; }
@@ -460,10 +685,12 @@ button:disabled { opacity: 0.6; cursor: not-allowed; }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
   .kpi-valor { font-size: 1.7rem; }
 
-  .auth-shell { padding: 16px; align-items: flex-start; padding-top: 8vh; }
+  .auth-shell:not(.auth-split) { padding: 16px; align-items: flex-start; padding-top: 8vh; }
   .auth-card { padding: 24px 20px; }
 
   .hist-item img { width: 96px; height: 96px; }
+  .hist-item .hist-resultado { min-width: 100%; }  /* resultado abaixo da foto */
+  .hist-foto { flex-direction: row; align-items: flex-end; gap: 10px; }
 
   /* Tabela vira lista de cartoes (usa o atributo data-label de cada celula) */
   .tabela-responsiva thead { display: none; }

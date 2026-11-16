@@ -19,6 +19,8 @@ modelo_ham10000.zip
 # (o modelo application-local.properties.example sobe normalmente)
 backend/src/main/resources/application-local.properties
 .env
+# Lista pessoal de links do projeto (fica so na maquina do autor)
+LINKS.txt
 # Instrucoes do assistente de IA (ficam so na maquina do autor)
 CLAUDE.md
 .claude/

@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/resultados")
@@ -40,11 +41,16 @@ public class ResultadoIAController {
 
     // Etapa "human-in-the-loop": o medico confirma/corrige o diagnostico sugerido pela IA
     @Operation(summary = "Validar diagnóstico (Human-in-the-loop)",
-            description = "O médico confirma ou corrige a sugestão da IA. Corpo esperado: {\"diagnosticoValidado\": \"texto\"}.")
+            description = "O médico confirma ou corrige a sugestão da IA. Corpo esperado: {\"diagnosticoValidado\": \"texto\"}. "
+                    + "Responde 400 {\"erro\"} se o diagnóstico vier vazio.")
     @PutMapping("/{id}/validar")
     public ResponseEntity<?> validar(@PathVariable Long id, @RequestBody ValidacaoDiagnosticoRequest req) {
-        return resultadoIARepository.findById(id).map(resultado -> {
-            resultado.setDiagnosticoValidado(req.getDiagnosticoValidado());
+        String diagnostico = req.getDiagnosticoValidado() == null ? "" : req.getDiagnosticoValidado().trim();
+        if (diagnostico.isEmpty()) {
+            return ResponseEntity.badRequest().body(Map.of("erro", "Informe o diagnóstico final antes de validar."));
+        }
+        return resultadoIARepository.findById(id).<ResponseEntity<?>>map(resultado -> {
+            resultado.setDiagnosticoValidado(diagnostico);
             resultado.setValidado(true);
             resultado.setDataValidacao(LocalDateTime.now());
             return ResponseEntity.ok(resultadoIARepository.save(resultado));

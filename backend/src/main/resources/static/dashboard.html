@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#132A3B">
-  <title>Dashboard - Plataforma Dermatologica</title>
+  <title>Dashboard - Plataforma Dermatológica</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23132A3B'/%3E%3Ccircle cx='10.5' cy='10.5' r='5.5' fill='none' stroke='%23fff' stroke-width='1.8'/%3E%3Ccircle cx='10.5' cy='10.5' r='1.8' fill='%23fff'/%3E%3Cline x1='14.6' y1='14.6' x2='19' y2='19' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -35,6 +36,7 @@
 
     <main class="content">
       <div class="page-header">
+        <p class="saudacao" id="saudacao"></p>
         <h1>Visão geral</h1>
         <p>Indicadores consolidados a partir dos dados cadastrados, para apoiar a priorização do seu trabalho.</p>
       </div>
@@ -61,8 +63,24 @@
   <script>
     exigirLogin();
 
+    // "Bom dia, Ana" conforme o horario do aparelho
+    (function mostrarSaudacao() {
+      const hora = new Date().getHours();
+      const periodo = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+      const nome = primeiroNome(localStorage.getItem("dermato_nome"));
+      document.getElementById("saudacao").textContent = nome ? `${periodo}, ${nome}` : periodo;
+    })();
+
     async function carregarDashboard() {
-      const resumo = await buscarResumoDashboard();
+      const kpis = document.getElementById("kpiGrid");
+      kpis.innerHTML = "<p class='info-foto'>Carregando indicadores...</p>";
+      let resumo;
+      try {
+        resumo = await buscarResumoDashboard();
+      } catch (e) {
+        kpis.innerHTML = `<p class="msg erro">Não foi possível carregar os indicadores: ${escaparHtml(e.message)}</p>`;
+        return;
+      }
 
       document.getElementById("kpiGrid").innerHTML = `
         <div class="kpi-box"><div class="kpi-valor">${resumo.totalPacientes}</div><div class="kpi-label">Pacientes cadastrados</div></div>
@@ -89,7 +107,10 @@
         .map(([categoria, qtd]) => {
           const pct = Math.round((qtd / total) * 100);
           return `<div class="prob-row">
-                    <div>${categoria} — ${qtd} caso(s) (${pct}%)</div>
+                    <div class="prob-linha">
+                      <span>${escaparHtml(categoria)}</span>
+                      <span class="prob-pct">${qtd} ${qtd === 1 ? "caso" : "casos"} · ${pct}%</span>
+                    </div>
                     <div class="prob-bar-bg"><div class="prob-bar" style="width:${pct}%"></div></div>
                   </div>`;
         }).join("");

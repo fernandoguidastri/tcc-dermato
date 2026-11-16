@@ -4,44 +4,65 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#132A3B">
-  <title>Cadastro de Médico - Plataforma Dermatologica</title>
+  <title>Cadastro de Médico - Plataforma Dermatológica</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23132A3B'/%3E%3Ccircle cx='10.5' cy='10.5' r='5.5' fill='none' stroke='%23fff' stroke-width='1.8'/%3E%3Ccircle cx='10.5' cy='10.5' r='1.8' fill='%23fff'/%3E%3Cline x1='14.6' y1='14.6' x2='19' y2='19' stroke='%23fff' stroke-width='1.8' stroke-linecap='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <div class="auth-shell">
-    <div class="auth-card">
-      <div class="auth-brand">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#132A3B" stroke-width="1.6">
+  <div class="auth-shell auth-split">
+    <section class="auth-painel">
+      <div class="auth-painel-marca">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.6">
           <circle cx="10.5" cy="10.5" r="6.5"/>
-          <circle cx="10.5" cy="10.5" r="2" fill="#132A3B" stroke="none"/>
+          <circle cx="10.5" cy="10.5" r="2" fill="#fff" stroke="none"/>
           <line x1="15.2" y1="15.2" x2="20.5" y2="20.5" stroke-linecap="round"/>
         </svg>
-        <span class="brand-text">Plataforma Dermatológica</span>
+        Plataforma Dermatológica
       </div>
 
-      <h2>Cadastro de profissional</h2>
-      <p>Crie sua conta de acesso ao sistema</p>
+      <div class="auth-painel-corpo">
+        <h1>Apoio à decisão clínica em lesões de pele</h1>
+        <p>Registre a consulta, fotografe a lesão com o celular e veja as probabilidades calculadas pelo modelo de IA. Quem decide o diagnóstico é sempre o médico.</p>
+        <ul class="auth-passos">
+          <li><span>1</span> Cadastro do paciente e da consulta</li>
+          <li><span>2</span> Análise da imagem pela IA</li>
+          <li><span>3</span> Validação do diagnóstico pelo médico</li>
+        </ul>
+      </div>
 
-      <label>Nome completo</label>
-      <input type="text" id="nome">
+      <p class="auth-aviso">Projeto acadêmico. A IA é apenas apoio: não é dispositivo médico e não substitui a avaliação profissional.</p>
+      <p class="auth-rodape">TCC · Engenharia de Computação · UNILINS · 2026</p>
+    </section>
 
-      <label>CRM</label>
-      <input type="text" id="crm">
+    <main class="auth-form-lado">
+      <form class="auth-card" onsubmit="cadastrar(event)" novalidate>
+        <h2>Cadastro de profissional</h2>
+        <p>Crie sua conta de acesso ao sistema</p>
 
-      <label>E-mail</label>
-      <input type="email" id="email">
+        <label for="nome">Nome completo</label>
+        <input type="text" id="nome" autocomplete="name">
 
-      <label>Senha</label>
-      <input type="password" id="senha" minlength="8" autocomplete="new-password">
-      <p class="dica-campo">Mínimo de 8 caracteres.</p>
+        <label for="crm">CRM</label>
+        <input type="text" id="crm" placeholder="Ex.: CRM-SP 123456" autocomplete="off">
 
-      <button class="primary" onclick="cadastrar()" style="width:100%;">Cadastrar</button>
-      <div id="msg" class="msg"></div>
+        <label for="email">E-mail</label>
+        <input type="email" id="email" autocomplete="email">
 
-      <p style="margin-top:20px; font-size:0.85rem;">
-        <a class="link-simple" href="login.html">Voltar para login</a>
-      </p>
-    </div>
+        <label for="senha">Senha</label>
+        <div class="campo-senha">
+          <input type="password" id="senha" minlength="8" autocomplete="new-password">
+          <button type="button" class="btn-ver-senha" onclick="alternarSenha('senha', this)" aria-label="Mostrar senha">Mostrar</button>
+        </div>
+        <p class="dica-campo">Mínimo de 8 caracteres.</p>
+
+        <button type="submit" class="primary" id="btnCadastrar" style="width:100%;">Cadastrar</button>
+        <div id="msg" class="msg"></div>
+
+        <p style="margin-top:20px; font-size:0.85rem;">
+          <a class="link-simple" href="login.html">Voltar para login</a>
+        </p>
+      </form>
+    </main>
   </div>
 
   <script src="js/api.js"></script>
@@ -58,7 +79,8 @@
       return null;
     }
 
-    async function cadastrar() {
+    async function cadastrar(evento) {
+      evento.preventDefault();
       const dados = {
         nome: document.getElementById("nome").value,
         crm: document.getElementById("crm").value,
@@ -72,10 +94,12 @@
         msg.className = "msg erro";
         return;
       }
+      const botao = document.getElementById("btnCadastrar");
       try {
-        await cadastrarMedico(dados);
+        await comCarregamento(botao, "Cadastrando...", () => cadastrarMedico(dados));
         msg.textContent = "Cadastro realizado! Redirecionando para login...";
         msg.className = "msg sucesso";
+        botao.disabled = true; // evita um segundo cadastro durante o redirecionamento
         setTimeout(() => window.location.href = "login.html", 1200);
       } catch (e) {
         msg.textContent = "Erro ao cadastrar: " + e.message;
